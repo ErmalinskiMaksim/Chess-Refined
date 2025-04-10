@@ -27,7 +27,7 @@ set_property(TARGET Chess PROPERTY CXX_STANDARD 20)
 set_property(TARGET Chess PROPERTY CXX_STANDARD_REQUIRED ON)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET Chess PROPERTY CXX_STANDARD 20)
+  set_property(TARGET Chess PROPERTY CXX_STANDARD 23)
 endif()
 
 # TODO: Add tests and install targets if needed.

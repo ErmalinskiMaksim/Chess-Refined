@@ -1,15 +1,12 @@
 #include "../headers/Board.h"
 #include <iostream>
 
-Board::Board() : m_moveList(0), m_teamThatMoves(TeamColour::WHITE), m_isGameOver(false)
+Board::Board() 
+	: m_teamBlack(), m_teamWhite(), m_moveList(), m_teamThatMoves(TeamColour::WHITE), m_isGameOver(false)
 {
+	m_teamBlack.reserve(16);
+	m_teamWhite.reserve(16);
 	initializeTeams();
-}
-
-Board::~Board()
-{
-	m_teamBlack.clear();
-	m_teamWhite.clear();
 }
 
 void Board::processInput(sf::Event& event, Window& window)
@@ -18,7 +15,7 @@ void Board::processInput(sf::Event& event, Window& window)
 	{
 		const PieceType::Coordinates pos(PieceType::Coordinates::toBoard(sf::Mouse::getPosition(window.getWindow())));
 
-		Piece::setTurnOver(false);
+		Piece::s_isTurnOver = false;
 
 		if (m_teamThatMoves == TeamColour::BLACK)
 			for (auto&& a : m_teamBlack)
@@ -50,12 +47,12 @@ void Board::update()
 		for (auto&& a : m_teamWhite)
 			a.update(m_moveList);
 
-		if (Piece::isTurnOver())
+		if (Piece::s_isTurnOver)
 			m_teamThatMoves = TeamColour::WHITE;
 		else if (noMoves(m_teamBlack))
 		{
 			m_isGameOver = true;
-			std::cout << "WHITE WINS!\n";
+			m_moveList.push_back("WHITE WINS!\n");
 		}
 	}
 	else
@@ -66,12 +63,12 @@ void Board::update()
 		for (auto&& a : m_teamBlack)
 			a.update(m_moveList);
 
-		if (Piece::isTurnOver())
+		if (Piece::s_isTurnOver)
 			m_teamThatMoves = TeamColour::BLACK;
 		else if (noMoves(m_teamWhite))
 		{
 			m_isGameOver = true;
-			std::cout << "BLACK WINS!\n";
+			m_moveList.push_back("BLACK WINS!\n");
 		}
 	}
 
@@ -86,7 +83,7 @@ void Board::update()
 	else if (sumBlack > sumWhite)
 		std::cout << "Score: BLACK +" << (sumBlack - sumWhite) << '\n';
 	else std::cout << "Score: 0-0\n";
-
+	std::cout << "Press 'r' to restart\n";
 	std::cout << "=====Moves=====" << std::endl;
 	for (auto&& a : m_moveList)
 		std::cout << a << '\n';
@@ -102,7 +99,8 @@ void Board::display(Window& window)
 
 void Board::restart()
 {
-	Piece::setTurnOver(false);
+	Piece::s_isTurnOver = false;
+	Piece::s_anyPiecesSelected = false;
 	PieceType::s_positionInfo.clear();
 	PieceType::s_dangerousPieces.clear();
 	PieceType::s_checkedKing = { false, TeamColour::BLACK };
@@ -119,26 +117,18 @@ void Board::initializeTeams()
 {
 	auto initialization = [](std::vector<Piece>& team, TeamColour colour)
 	{
-		team.resize(16);
-		team[0].setType(new Rook(colour));
-		team[1].setType(new Knight(colour));
-		team[2].setType(new Bishop(colour));
-		team[3].setType(new Queen(colour));
-		team[4].setType(new King(colour));
-		team[5].setType(new Bishop(colour));
-		team[6].setType(new Knight(colour));
-		team[7].setType(new Rook(colour));
-
-		for (int i = 0; i < 8; ++i)
-		{
-			team[i].setPosition({ i * SQUARE_WIDTH, (BOARD_HEIGHT - SQUARE_HEIGHT) * (int)colour });
-		}
+		team.clear();
+		team.push_back(Piece(std::make_unique<Rook>(0, 7 * (1 -static_cast<int>(colour)), colour)));
+		team.push_back(Piece(std::make_unique<Knight>(1, 7 * (1 -static_cast<int>(colour)), colour)));
+		team.push_back(Piece(std::make_unique<Bishop>(2, 7 * (1 -static_cast<int>(colour)), colour)));
+		team.push_back(Piece(std::make_unique<Queen>(3, 7 * (1 -static_cast<int>(colour)), colour)));
+		team.push_back(Piece(std::make_unique<King>(4, 7 * (1 -static_cast<int>(colour)), colour)));
+		team.push_back(Piece(std::make_unique<Bishop>(5, 7 * (1 -static_cast<int>(colour)), colour)));
+		team.push_back(Piece(std::make_unique<Knight>(6, 7 * (1 -static_cast<int>(colour)), colour)));
+		team.push_back(Piece(std::make_unique<Rook>(7, 7 * (1 -static_cast<int>(colour)), colour)));
 
 		for (int i = 8; i < 16; ++i)
-		{
-			team[i].setType(new Pawn(colour));
-			team[i].setPosition({ (i - 8) * SQUARE_WIDTH, (int)colour * (BOARD_HEIGHT - 3 * SQUARE_HEIGHT) + SQUARE_HEIGHT });
-		}
+			team.push_back(Piece(std::make_unique<Pawn>((i - 8), 6 - static_cast<int>(colour) * 5, colour)));
 	};
 
 	initialization(m_teamBlack, TeamColour::BLACK);
@@ -175,7 +165,7 @@ void Board::displayBackground(Window& window)
 	for (int raw = 0; raw < 8; ++raw)
 		for (int column = 0; column < 8; ++column)
 		{
-			square.setPosition(column * SQUARE_WIDTH, raw * SQUARE_HEIGHT);
+			square.setPosition(static_cast<float>(column * SQUARE_WIDTH), static_cast<float>(raw * SQUARE_HEIGHT));
 
 			(raw + column) % 2 ? square.setFillColor({ 112, 112, 112, 255 }) : square.setFillColor({ 181, 181, 181, 255 });
 

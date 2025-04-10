@@ -6,7 +6,6 @@ class Board
 {
 public:
 	Board();
-	~Board();
 
 	void processInput(sf::Event& event, Window& window);
 	void update();
@@ -22,8 +21,7 @@ private:
 
 	std::vector<Piece> m_teamBlack;
 	std::vector<Piece> m_teamWhite;
-
-	std::list<std::string> m_moveList;
+	std::vector<std::string> m_moveList;
 
 	TeamColour m_teamThatMoves;
 	bool m_isGameOver;

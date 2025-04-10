@@ -2,11 +2,11 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-const int WINDOW_HEIGHT = 640;
-const int WINDOW_WIDTH = 640;
-const int BOARD_HEIGHT = 640;
-const int BOARD_WIDTH = 640;
-const int SQUARE_WIDTH = WINDOW_WIDTH / 8;
-const int SQUARE_HEIGHT = WINDOW_HEIGHT / 8;
+constexpr int WINDOW_HEIGHT = 128*8;
+constexpr int WINDOW_WIDTH = 128*8;
+constexpr int BOARD_HEIGHT = 128*8;
+constexpr int BOARD_WIDTH = 128*8;
+constexpr int SQUARE_WIDTH = WINDOW_WIDTH / 8;
+constexpr int SQUARE_HEIGHT = WINDOW_HEIGHT / 8;
 
 #endif // !Constants
