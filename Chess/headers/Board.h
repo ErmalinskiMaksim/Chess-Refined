@@ -1,30 +1,74 @@
-#ifndef NGS
-#define NGS
+#ifndef BOARD_H
+#define BOARD_H
+
+#include <array>
+#include <vector>
 #include "Piece.h"
+#include "Pos.h"
 
-class Board
-{
+class Board {
+    using BoardType = std::array<Piece, 64>;
+    using Moves = std::vector<Pos>;
+    friend consteval BoardType initBoard();
 public:
-	Board();
+    using Directions = const std::array<Pos, 4>;
+    using RoundDirections = const std::array<Pos, 8>;
 
-	void processInput(sf::Event& event, Window& window);
-	void update();
-	void display(Window& window);
-	
+    Board();
+    inline const BoardType& get() const noexcept {
+        return m_board;
+    }
+    static inline Pos indexToPos(size_t idx) noexcept {
+        return Pos(idx % 8, static_cast<int8_t>(idx) / 8);
+    } 
+
+    uint8_t commitMove(Pos, Pos, PieceColor) noexcept;
+    Moves calculatePieceMoves(Pos, PieceColor) noexcept;
+    void promote(Pos, PieceType) noexcept;
+    bool anyMovesAvailable(PieceColor) noexcept;
+    bool isPromotionPossible(Pos) const noexcept;
+    bool isKingChecked(PieceColor) const noexcept;
+    bool compareColor(Pos, PieceColor) const noexcept;
+
 private:
-	void initializeTeams();
+    static inline Pos posAhead(Pos p, PieceColor col) noexcept {
+        return Pos(p.x, static_cast<int8_t>(p.y + 2*static_cast<int8_t>(col) - 1));
+    }
+    static inline bool isEmpty(Piece p) noexcept {
+        return p.type == PieceType::NONE;
+    }
+    static inline size_t posToIndex(Pos pos) noexcept {
+        return static_cast<size_t>(pos.x + pos.y*8);
+    }
+    static inline bool inLegalBounds(Pos moveTo) noexcept {
+        return (moveTo.x >= 0 && moveTo.x <= 7 && moveTo.y >= 0 && moveTo.y <= 7);
+    }
 
-	void displayTeams(Window& window);
-	void displayBackground(Window& window);
+    inline Piece at(Pos pos) const noexcept {
+        return m_board[posToIndex(pos)];
+    }
 
-	void restart();
+    Moves calculatePawnMoves   (Pos, PieceColor) const noexcept;
+    Moves calculateSlidingMoves(const Directions&, Pos, PieceColor) const noexcept;
+    Moves calculateRoundMoves  (const RoundDirections&, Pos, PieceColor) const noexcept;
 
-	std::vector<Piece> m_teamBlack;
-	std::vector<Piece> m_teamWhite;
-	std::vector<std::string> m_moveList;
+    bool isKingEndangered(Pos, PieceColor, Pos, Pos) noexcept;
+    bool isKingAttacked(Pos, PieceColor) const noexcept;
+    bool isKingAttackedByPawn   (Pos, PieceColor) const noexcept;
+    bool isKingAttackedBySliding(const Directions&, Pos, Piece) const noexcept;
+    bool isKingAttackedByRound  (const RoundDirections&, Pos, Piece) const noexcept;
 
-	TeamColour m_teamThatMoves;
-	bool m_isGameOver;
+    bool  canCastle(Pos, PieceColor, bool) const noexcept;
+
+    struct TeamData {
+        Pos kingPos;
+        bool QSideCastling;
+        bool KSideCastling;
+    };
+    BoardType m_board;
+    TeamData m_blackData;
+    TeamData m_whiteData;
+    Pos m_enPassantTarget;    
+    bool m_enPassantEnabled;
 };
-
 #endif
