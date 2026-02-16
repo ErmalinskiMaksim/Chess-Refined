@@ -2,25 +2,21 @@
 #define BOARD_STATE_MACHINE_H
 
 #include "RTWgui/Events.h"
-#include "BoardWidget.h"
-#include "BoardHandlers.h"
-#include "HandlerContext.h"
-
-template<WidgetType, typename, typename>
-class BoardInteractor;
-using DefaultBoardInteractorView = std::reference_wrapper<
-                               BoardInteractor<BoardWidget
-                             , HandlerContext
-                             , BoardPromotionHandler<HandlerContext>
->>;
+#include "ChessClient.h"
 
 class IdleBoardState;
+class MoveWaitingState;
 class MoveSelectionBoardState;
+class MoveCommitWaitingState;
+class PromotionCommitWaitingState;
 class GameOverBoardState;
 
 using States = std::variant<
               IdleBoardState
+            , MoveWaitingState
             , MoveSelectionBoardState
+            , MoveCommitWaitingState
+            , PromotionCommitWaitingState
             , GameOverBoardState
 >;
 using OptState = std::optional<States>;
@@ -30,7 +26,8 @@ class BaseBoardState {
 public:
     explicit BaseBoardState(DefaultBoardInteractorView context) 
         : m_context(context) {}
-    // supported events
+    template<NetworkMessageType Msg>
+    OptState process(Msg&&);
 protected:
     // Board interactor reference
     DefaultBoardInteractorView m_context;
@@ -45,8 +42,18 @@ public:
         : BaseBoardState(context) {}
     // supported events
     OptState process(const MouseLeftDownEvent&);
-    // supported rendering logic
-    void draw(const Renderer&, const Font&) const;
+    using BaseBoardState::process;
+    OptState process(GameState::Flags&&);
+};
+
+class MoveWaitingState : public BaseBoardState {
+public:
+    explicit MoveWaitingState(DefaultBoardInteractorView context)
+        : BaseBoardState(context) {}
+    // supported events
+    OptState process(const MouseLeftDownEvent&);
+    using BaseBoardState::process;
+    OptState process(Moves&&);
 };
 
 class MoveSelectionBoardState : public BaseBoardState {
@@ -55,8 +62,27 @@ public:
         : BaseBoardState(context) {}
     // supported events
     OptState process(const MouseLeftDownEvent&);
-    // supported rendering logic
-    void draw(const Renderer&, const Font&) const;
+    using BaseBoardState::process;
+};
+
+class MoveCommitWaitingState : public BaseBoardState {
+public:
+    explicit MoveCommitWaitingState(DefaultBoardInteractorView context)
+        : BaseBoardState(context) {}
+    // supported events
+    OptState process(const MouseLeftDownEvent&);
+    using BaseBoardState::process;
+    OptState process(GameState::Flags&&);
+};
+
+class PromotionCommitWaitingState : public BaseBoardState {
+public:
+    explicit PromotionCommitWaitingState (DefaultBoardInteractorView context)
+        : BaseBoardState(context) {}
+    // supported events
+    OptState process(const MouseLeftDownEvent&);
+    using BaseBoardState::process;
+    OptState process(PromotionMsg&&);
 };
 
 class GameOverBoardState : public BaseBoardState {
@@ -64,8 +90,11 @@ public:
     explicit GameOverBoardState(DefaultBoardInteractorView context)
         : BaseBoardState(context) {}
     OptState process(const MouseLeftDownEvent&);
-    void draw(const Renderer&, const Font&) const;
+    using BaseBoardState::process;
 };
+
+template<NetworkMessageType Msg>
+OptState BaseBoardState::process(Msg&&) { return std::nullopt; }
 
 // state machine 
 template<BoardStateType... States>
@@ -79,13 +108,13 @@ public:
         auto optResult = std::visit([&](auto& state) { return state.process(event); }, m_state);
         if (optResult) m_state = std::move(*optResult);
     }
-    // dispatches states
-    void draw(const Renderer& renderer, const Font& font) const {
-        std::visit([&](auto&& state) { return state.draw(renderer, font); }, m_state);
+    template<NetworkMessageType Msg>
+    void process(Msg&& msg) {
+        auto optResult = std::visit([&](auto& state) { return state.process(std::move(msg)); }, m_state);
+        if (optResult) m_state = std::move(*optResult);
     }
 private:
     std::variant<States...> m_state;
 };
-
 
 #endif //

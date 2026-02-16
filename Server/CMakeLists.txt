@@ -1,12 +1,12 @@
-﻿# executables
+# executables
 file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-add_executable (Chess ${SRC})
+add_executable (ChessServer ${SRC})
 
 # features 
-target_compile_features(Chess PUBLIC cxx_std_23)
+target_compile_features(ChessServer PUBLIC cxx_std_23)
 
 # options
-target_compile_options(Chess PRIVATE
+target_compile_options(ChessServer PRIVATE
     -Wstrict-aliasing
     -Wall 
     -Wextra 
@@ -29,11 +29,11 @@ target_compile_options(Chess PRIVATE
 )
 
 if (GUI_ENABLE_LTO)
-    set_property(TARGET Chess PROPERTY
+    set_property(TARGET ChessServer PROPERTY
         INTERPROCEDURAL_OPTIMIZATION_RELEASE true)
 endif()
 
-target_compile_options(Chess PRIVATE
+target_compile_options(ChessServer PRIVATE
     $<$<CONFIG:Debug>:
         -O0
         -g3
@@ -46,7 +46,7 @@ target_compile_options(Chess PRIVATE
     >
 )
 
-target_compile_options(Chess PRIVATE
+target_compile_options(ChessServer PRIVATE
     $<$<CONFIG:Release>:
         -O3
         -march=native
@@ -55,16 +55,15 @@ target_compile_options(Chess PRIVATE
 )
 
 # definitions
-target_compile_definitions(Chess PRIVATE
+target_compile_definitions(ChessServer PRIVATE
     $<$<CONFIG:Debug>:DEBUG>
 )
 
-target_include_directories(Chess
+target_include_directories(ChessServer
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/headers
 )
 
 add_compile_options(-fdebug-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=.)   
 
-target_link_libraries(Chess PRIVATE RTWgui)
-
+# target_link_libraries(ChessServer PRIVATE RTWgui)

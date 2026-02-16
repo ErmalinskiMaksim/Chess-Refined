@@ -17,5 +17,11 @@ set_property(CACHE GRAPHICS_LIBRARY PROPERTY STRINGS SDL SFML)
 
 
 project(Chess LANGUAGES CXX)
+
+set(Boost_NO_BOOST_CMAKE ON)
+find_package(Boost REQUIRED)
+find_package(Threads REQUIRED)
+
 include(cmake/dependencies.cmake)
-add_subdirectory ("Chess")
+add_subdirectory ("Client")
+add_subdirectory ("Server")

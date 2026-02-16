@@ -1,10 +1,8 @@
 #include "RTWgui/Init.h"
 
 // Custom widgets
-#include "BoardWidget.h"
 
 // Custom handlers for layers
-#include "BoardHandlers.h"
 
 // Custom Interactors
 #include "BoardInteractor.h"
@@ -16,7 +14,7 @@ const unsigned WINDOW_WIDTH  = TILE_SIZE*8;
 const unsigned WINDOW_HEIGHT = TILE_SIZE*8;
 
 // Font
-const std::string_view MAIN_FONT_PATH = "Fonts/Monoid-Regular.ttf";
+const std::string_view MAIN_FONT_PATH = "Client/Res/Fonts/Monoid-Regular.ttf";
 const float MAIN_FONT_SZ = 32;
 
 const size_t MAIN_LAYER_COUNT = 1;
@@ -27,7 +25,7 @@ void initializeLayers(LayerArray& layers, float mainFontCharWidth, float mainFon
 
     layers[0] = std::make_unique
         <Layer<BoardWidget, HandlerContext, NonModalLayerCreateRequest, BoardInteractor
-            , BoardPromotionHandler<HandlerContext>>>(
+            , BoardPromotionHandler<HandlerContext>, GameOverHandler<HandlerContext>>>(
             NonModalLayerCreateRequest{
                 Widget {
                     Rect{0.0f, 0.0f, BOARD_WIDTH, BOARD_HEIGHT}
@@ -36,5 +34,6 @@ void initializeLayers(LayerArray& layers, float mainFontCharWidth, float mainFon
                     , mainFontCharWidth
                     , mainFontCharHeight
                 }, NonModalLayerCreateRequest::Payload{}}
-            , BoardPromotionHandler<HandlerContext>{});
+            , BoardPromotionHandler<HandlerContext>{}
+            , GameOverHandler<HandlerContext>{});
 }

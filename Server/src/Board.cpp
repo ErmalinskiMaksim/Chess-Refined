@@ -1,11 +1,9 @@
 #include "Board.h"
-#include "Piece.h"
-#include <cstdint>
 #include <utility>
 #include <algorithm>
 
-consteval Board::BoardType initBoard() {
-    Board::BoardType board;
+consteval BoardType initBoard() {
+    BoardType board;
     board[0] = { PieceType::ROOK,   PieceColor::WHITE};
     board[1] = { PieceType::KNIGHT, PieceColor::WHITE};
     board[2] = { PieceType::BISHOP, PieceColor::WHITE};
@@ -75,6 +73,7 @@ Board::Board()
 
 uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, PieceColor teamColor) noexcept {
     // reset en passant flags
+    GameFlags flags = GameFlags::NONE;
     bool oldEnPassantEnabled = m_enPassantEnabled;
     Pos oldEnPassantTarget = m_enPassantTarget;
     m_enPassantEnabled = false;
@@ -84,6 +83,8 @@ uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, PieceColor teamColor) noexce
     m_board[posToIndex(moveTo)] = 
         std::exchange(m_board[posToIndex(moveFrom)], {PieceType::NONE, PieceColor::BLACK}); 
 
+    PieceColor oppositeTeamColor = (teamColor == PieceColor::WHITE) 
+        ? PieceColor::BLACK : PieceColor::WHITE;
     auto& team = (teamColor == PieceColor::WHITE) ? m_whiteData : m_blackData;
 
     // update castling
@@ -111,34 +112,46 @@ uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, PieceColor teamColor) noexce
         team.kingPos = moveTo;
         team.QSideCastling = team.KSideCastling = false;
     }
-
+    // enpassant and promotion
     if (movedPiece.type == PieceType::PAWN) {
         // update enpassant 
         if (oldEnPassantEnabled && moveTo == oldEnPassantTarget) {
-
             m_board[posToIndex(Pos(moveTo.x, moveFrom.y))].type = PieceType::NONE;
         } 
         if (std::abs(moveFrom.y - moveTo.y) == 2) {
             m_enPassantEnabled = true;
             m_enPassantTarget = posAhead(moveFrom, movedPiece.col);
         }  
+        // check promotion
+        if (moveTo.y == ((movedPiece.col == PieceColor::BLACK) ? 0 : 7))
+            flags = GameFlags::PROMOTION;
     }
+
+    if (!hasAnyMoves(oppositeTeamColor)) {
+        auto& oppositeTeam = (oppositeTeamColor == PieceColor::WHITE)
+            ? m_whiteData : m_blackData;
+        flags = (isKingAttacked(oppositeTeam.kingPos, oppositeTeamColor))
+            ? GameFlags::CHECK_MATE : GameFlags::STALE_MATE;
+    }
+
     // get score
+    uint8_t score;
     switch(capturedType) {
-        case PieceType::PAWN:   return 1u;
-        case PieceType::ROOK:   return 5u;
-        case PieceType::KNIGHT: return 3u;
-        case PieceType::BISHOP: return 3u;
-        case PieceType::QUEEN:  return 9u;
-        default:                return 0u;
+        case PieceType::PAWN:   score = 1u; break;
+        case PieceType::ROOK:   score = 5u; break;
+        case PieceType::KNIGHT: score = 3u; break;
+        case PieceType::BISHOP: score = 3u; break;
+        case PieceType::QUEEN:  score = 9u; break;
+        default:                score = 0u; break;
     }
+    return score + static_cast<uint8_t>(flags);
 }
 
 void Board::promote(Pos pos, PieceType type) noexcept {
     m_board[posToIndex(pos)].type = type; 
 }
 
-bool Board::anyMovesAvailable(PieceColor teamColor) noexcept {
+bool Board::hasAnyMoves(PieceColor teamColor) noexcept {
     for (auto i = 0uz; i < m_board.size(); ++i) {
         if (m_board[i].col != teamColor || m_board[i].type == PieceType::NONE)
             continue;
@@ -147,30 +160,20 @@ bool Board::anyMovesAvailable(PieceColor teamColor) noexcept {
     return false;
 }
 
-bool Board::isPromotionPossible(Pos pos) const noexcept {
-    auto piece = at(pos); 
-    return (piece.type == PieceType::PAWN) 
-        && (pos.y == ((piece.col == PieceColor::BLACK) ? 0 : 7));
-}
-
-bool Board::isKingChecked(PieceColor team) const noexcept {
-    return isKingAttacked((team == PieceColor::WHITE) ? m_whiteData.kingPos : m_blackData.kingPos, team);
-}
-
-bool Board::compareColor(Pos pos, PieceColor col) const noexcept {
-    return at(pos).col == col;
-}
-
-Board::Moves Board::calculatePieceMoves(Pos moveFrom, PieceColor teamColor) noexcept {
+Moves Board::calculatePieceMoves(Pos moveFrom, PieceColor teamColor) noexcept {
     Moves moves{};
+    auto movingPiece = at(moveFrom);
+    // wrong team
+    if (movingPiece.col != teamColor) return {};
+
     auto& team = (teamColor == PieceColor::WHITE) ? m_whiteData : m_blackData;
-    switch (at(moveFrom).type) {
+    switch (movingPiece.type) {
         case PieceType::PAWN:   
             moves = [&]() {
                 auto mvs = calculatePawnMoves(moveFrom, teamColor);
                 // en passant 
                 if (m_enPassantEnabled) {
-                    auto ahead = posAhead(moveFrom, at(moveFrom).col);
+                    auto ahead = posAhead(moveFrom, movingPiece.col);
                     if (std::abs(ahead.x - m_enPassantTarget.x) == 1 && ahead.y == m_enPassantTarget.y)
                         mvs.emplace_back(m_enPassantTarget);
                 }
@@ -221,7 +224,7 @@ Board::Moves Board::calculatePieceMoves(Pos moveFrom, PieceColor teamColor) noex
     return filteredMoves;
 }
 
-Board::Moves Board::calculatePawnMoves(Pos pos, PieceColor pawnColor) const noexcept {
+Moves Board::calculatePawnMoves(Pos pos, PieceColor pawnColor) const noexcept {
     Moves moves;
     moves.reserve(4);
 
@@ -258,7 +261,7 @@ Board::Moves Board::calculatePawnMoves(Pos pos, PieceColor pawnColor) const noex
     return moves;
 }
 
-Board::Moves Board::calculateSlidingMoves(const Directions& dirs, Pos pos, PieceColor myColor) const noexcept {
+Moves Board::calculateSlidingMoves(const Directions& dirs, Pos pos, PieceColor myColor) const noexcept {
     Moves moves;
     moves.reserve(14);
 
@@ -276,7 +279,7 @@ Board::Moves Board::calculateSlidingMoves(const Directions& dirs, Pos pos, Piece
     return moves;
 }
 
-Board::Moves Board::calculateRoundMoves(const RoundDirections& dirs, Pos pos, PieceColor myColor) const noexcept {
+Moves Board::calculateRoundMoves(const RoundDirections& dirs, Pos pos, PieceColor myColor) const noexcept {
     Moves moves;
     moves.reserve(8);
 

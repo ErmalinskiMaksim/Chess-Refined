@@ -6,9 +6,9 @@ TextureMap::TextureMap(Texture texture)
     , m_pieceHeight{static_cast<float>(m_texture.get()->h) / 2}
 {}
 
-Rect TextureMap::getTile(PieceType type, PieceColor color) const noexcept {
-    float y = (color == PieceColor::WHITE) ? m_pieceHeight : 0.0f;
-    switch(type) {
+Rect TextureMap::getTile(Piece piece) const noexcept {
+    float y = (piece.col == PieceColor::WHITE) ? m_pieceHeight : 0.0f;
+    switch(piece.type) {
         case PieceType::QUEEN:  return Rect{0.0f          , y, m_pieceWidth, m_pieceHeight}; 
         case PieceType::KING:   return Rect{m_pieceWidth  , y, m_pieceWidth, m_pieceHeight};
         case PieceType::ROOK:   return Rect{m_pieceWidth*2, y, m_pieceWidth, m_pieceHeight};

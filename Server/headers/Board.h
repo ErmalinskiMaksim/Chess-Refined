@@ -1,21 +1,16 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include <array>
-#include <vector>
-#include "Piece.h"
-#include "Pos.h"
+#include "Common.h"
 
 class Board {
-    using BoardType = std::array<Piece, 64>;
-    using Moves = std::vector<Pos>;
     friend consteval BoardType initBoard();
 public:
     using Directions = const std::array<Pos, 4>;
     using RoundDirections = const std::array<Pos, 8>;
 
     Board();
-    inline const BoardType& get() const noexcept {
+    inline BoardType get() const noexcept {
         return m_board;
     }
     static inline Pos indexToPos(size_t idx) noexcept {
@@ -25,10 +20,6 @@ public:
     uint8_t commitMove(Pos, Pos, PieceColor) noexcept;
     Moves calculatePieceMoves(Pos, PieceColor) noexcept;
     void promote(Pos, PieceType) noexcept;
-    bool anyMovesAvailable(PieceColor) noexcept;
-    bool isPromotionPossible(Pos) const noexcept;
-    bool isKingChecked(PieceColor) const noexcept;
-    bool compareColor(Pos, PieceColor) const noexcept;
 
 private:
     static inline Pos posAhead(Pos p, PieceColor col) noexcept {
@@ -52,13 +43,14 @@ private:
     Moves calculateSlidingMoves(const Directions&, Pos, PieceColor) const noexcept;
     Moves calculateRoundMoves  (const RoundDirections&, Pos, PieceColor) const noexcept;
 
-    bool isKingEndangered(Pos, PieceColor, Pos, Pos) noexcept;
-    bool isKingAttacked(Pos, PieceColor) const noexcept;
+    bool isKingEndangered       (Pos, PieceColor, Pos, Pos) noexcept;
+    bool isKingAttacked         (Pos, PieceColor) const noexcept;
     bool isKingAttackedByPawn   (Pos, PieceColor) const noexcept;
     bool isKingAttackedBySliding(const Directions&, Pos, Piece) const noexcept;
     bool isKingAttackedByRound  (const RoundDirections&, Pos, Piece) const noexcept;
 
-    bool  canCastle(Pos, PieceColor, bool) const noexcept;
+    bool canCastle(Pos, PieceColor, bool) const noexcept;
+    bool hasAnyMoves(PieceColor) noexcept;
 
     struct TeamData {
         Pos kingPos;

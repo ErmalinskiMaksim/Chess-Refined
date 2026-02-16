@@ -4,13 +4,13 @@
 #include "RTWgui/LibraryDependent/Texture.h"
 #include "Piece.h"
 
-static constexpr std::string_view IMAGE_PIECE_MAP_PATH = "Images/ChessPiecesArray.png";
+static constexpr std::string_view IMAGE_PIECE_MAP_PATH = "Client/Res/Images/ChessPiecesArray.png";
 
 class TextureMap {
 public:
     TextureMap() = default;
     TextureMap(Texture);
-    Rect getTile(PieceType, PieceColor) const noexcept;
+    Rect getTile(Piece) const noexcept;
     const Texture& get() const noexcept;
 private:
     Texture m_texture; 

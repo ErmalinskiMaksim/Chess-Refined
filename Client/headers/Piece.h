@@ -3,11 +3,11 @@
 
 #include <cstdint>
 
-enum class PieceType : int8_t {
+enum class PieceType : uint8_t {
     NONE, PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING
 };
 
-enum class PieceColor : int8_t {
+enum class PieceColor : uint8_t {
     BLACK = 0x00, WHITE = 0x01
 };
 
