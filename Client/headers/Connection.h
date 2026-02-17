@@ -1,24 +1,29 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
-#include "PacketSerializer.h"
 #include "boost/asio.hpp"
 #include <deque>
+#include <memory>
+#include "IConnection.h"
 
-class Connection;
 class ChessClient;
+class Connection;
 
-using ContextType = boost::asio::io_context;
+using Context = boost::asio::io_context;
+using Executor = boost::asio::executor_work_guard<Context::executor_type>;
 using SocketType = boost::asio::local::stream_protocol::socket;
+
 using ConnectionPtr = std::shared_ptr<Connection>;
 using ClientView = std::reference_wrapper<ChessClient>;
 
-class Connection : public std::enable_shared_from_this<Connection>{
+class Connection : public IConnection
+                 , public std::enable_shared_from_this<Connection> {
 public:
-    Connection(ContextType&, ClientView);
+    Connection(Context&, ClientView);
 
-    void connect(std::string_view);
-    void send(StreamType&&);
+    void start(std::string_view);
+    void send(StreamType) override;
+    void close() override;
 private:
     void readHeader();
     void readPayload(uint8_t);

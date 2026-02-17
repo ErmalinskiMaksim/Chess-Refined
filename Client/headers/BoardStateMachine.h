@@ -27,7 +27,7 @@ public:
     explicit BaseBoardState(DefaultBoardInteractorView context) 
         : m_context(context) {}
     template<NetworkMessageType Msg>
-    OptState process(Msg&&);
+    OptState process(Msg);
 protected:
     // Board interactor reference
     DefaultBoardInteractorView m_context;
@@ -43,7 +43,7 @@ public:
     // supported events
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
-    OptState process(GameState::Flags&&);
+    OptState process(GameState::Flags);
 };
 
 class MoveWaitingState : public BaseBoardState {
@@ -53,7 +53,7 @@ public:
     // supported events
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
-    OptState process(Moves&&);
+    OptState process(Moves);
 };
 
 class MoveSelectionBoardState : public BaseBoardState {
@@ -72,7 +72,7 @@ public:
     // supported events
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
-    OptState process(GameState::Flags&&);
+    OptState process(GameState::Flags);
 };
 
 class PromotionCommitWaitingState : public BaseBoardState {
@@ -82,7 +82,7 @@ public:
     // supported events
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
-    OptState process(PromotionMsg&&);
+    OptState process(PromotionMsg);
 };
 
 class GameOverBoardState : public BaseBoardState {
@@ -94,7 +94,7 @@ public:
 };
 
 template<NetworkMessageType Msg>
-OptState BaseBoardState::process(Msg&&) { return std::nullopt; }
+OptState BaseBoardState::process(Msg) { return std::nullopt; }
 
 // state machine 
 template<BoardStateType... States>
@@ -109,7 +109,7 @@ public:
         if (optResult) m_state = std::move(*optResult);
     }
     template<NetworkMessageType Msg>
-    void process(Msg&& msg) {
+    void process(Msg msg) {
         auto optResult = std::visit([&](auto& state) { return state.process(std::move(msg)); }, m_state);
         if (optResult) m_state = std::move(*optResult);
     }

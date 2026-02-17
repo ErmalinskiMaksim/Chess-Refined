@@ -4,14 +4,15 @@
 
 OptState IdleBoardState::process(const MouseLeftDownEvent& event) {
     auto& cli = ChessClient::get();
-    if (cli.isMyTurn()) {
-        cli.requestAvailableMoves(m_context.get().r_widget.get().guiPosToLogical(event.x, event.y));
+    auto boardPos = m_context.get().r_widget.get().guiPosToLogical(event.x, event.y);
+    if (cli.canMove(boardPos)) {
+        cli.requestAvailableMoves(boardPos);
         return MoveWaitingState{m_context};  
     }
     return std::nullopt;
 }
 
-OptState IdleBoardState::process(GameState::Flags&& flag) {
+OptState IdleBoardState::process(GameState::Flags flag) {
     auto& c = m_context.get();
     if (flag == GameState::Flags::STALE_MATE 
         || flag == GameState::Flags::CHECK_MATE) {
@@ -27,10 +28,10 @@ OptState MoveWaitingState::process(const MouseLeftDownEvent&) {
     return std::nullopt;
 }
 
-OptState MoveWaitingState::process(Moves&& moves) {
+OptState MoveWaitingState::process(Moves moves) {
     auto& c = m_context.get();
     const auto& w = c.r_widget.get();
- 
+    // get moves 
     c.m_moves = std::move(moves);
     // doesn't have moves, so cannot be selected
     if(c.m_moves.empty()) return IdleBoardState{c};
@@ -63,7 +64,7 @@ OptState MoveCommitWaitingState::process(const MouseLeftDownEvent&) {
     return std::nullopt;
 }
 
-OptState MoveCommitWaitingState::process(GameState::Flags&& flag) {
+OptState MoveCommitWaitingState::process(GameState::Flags flag) {
     auto& c = m_context.get();
     c.m_moves.clear();
     c.m_moveTiles.clear();
@@ -87,7 +88,7 @@ OptState PromotionCommitWaitingState::process(const MouseLeftDownEvent&) {
     return std::nullopt;
 }
 
-OptState PromotionCommitWaitingState::process(PromotionMsg&&) {
+OptState PromotionCommitWaitingState::process(PromotionMsg) {
     return IdleBoardState{m_context};
 }
 

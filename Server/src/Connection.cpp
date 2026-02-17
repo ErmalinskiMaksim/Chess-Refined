@@ -1,8 +1,8 @@
 #include "Connection.h"
 #include "ChessServer.h"
-#include <print>
+#include "Serializer.h"
 
-Connection::Connection(SocketType sock, ServerView svr) 
+Connection::Connection(Socket sock, ServerView svr) 
     : m_socket(std::move(sock))
     , m_strand{m_socket.get_executor()}
     , r_server(svr)
@@ -34,13 +34,13 @@ void Connection::readHeader() {
                 if (!ec) {
                     uint8_t length = self->m_headerBuffer;
                     self->readPayload(length);
-                } else self->disconnect();
+                } else self->close();
     }));
 }
 
 void Connection::readPayload(uint8_t payloadLen) {
     if (!payloadLen || payloadLen > sizeof(m_payloadBuffer)) {
-        disconnect();
+        close();
         return;
     }
 
@@ -51,10 +51,10 @@ void Connection::readPayload(uint8_t payloadLen) {
             m_strand 
             , [self = shared_from_this(), payloadLen](boost::system::error_code ec, size_t) {
                if (!ec) {
-                self->r_server.get().dispatchRequests(self, PacketSerializer::deserialize(
+                self->r_server.get().onPacket(self, Serializer::deserialize(
                             {self->m_payloadBuffer, payloadLen}));
                 self->readHeader(); 
-               } else self->disconnect();
+               } else self->close();
     }));
 }
 
@@ -69,12 +69,12 @@ void Connection::write() {
                 if (!self->m_sendQueue.empty()) 
                     self->write();
             } else {
-                self->disconnect();
+                self->close();
             }
         });
 }
 
-void Connection::disconnect() {
+void Connection::close() {
     if (m_disconnected) return;
 
     m_disconnected = true;

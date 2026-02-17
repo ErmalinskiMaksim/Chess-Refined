@@ -10,13 +10,9 @@ Pos BoardWidget::guiPosToLogical(float x, float y) const noexcept {
     return Pos(static_cast<int8_t>(x / m_squareSize), 7 - static_cast<int8_t>(y / m_squareSize));
 }
 
-Point BoardWidget::logicalToGuiPos(Pos pos) const noexcept {
-    return Point{static_cast<float>(pos.x)*m_squareSize, static_cast<float>(7-pos.y)*m_squareSize};
-}
-
 Rect BoardWidget::rectFromPos(Pos pos) const noexcept {
-    auto topLeft = logicalToGuiPos(pos);
-    return Rect{topLeft.x, topLeft.y, m_squareSize, m_squareSize};
+    return Rect{static_cast<float>(pos.x)*m_squareSize, static_cast<float>(7-pos.y)*m_squareSize
+            , m_squareSize, m_squareSize};
 }
 
 void BoardWidget::render(const Renderer& renderer, const Font&) const {

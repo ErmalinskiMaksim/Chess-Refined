@@ -47,16 +47,16 @@ public:
         if (!ctx.op) return false;
         switch (static_cast<Actions>(resp.code)) {
         case Actions::CHOOSE_ROOK:
-            ctx.op->get() = PromotionOperation{ PieceType::ROOK };            
+            ctx.op->get() = PromotionOperation{ Piece::Type::ROOK };            
             break;
         case Actions::CHOOSE_KNIGHT:
-            ctx.op->get() = PromotionOperation{ PieceType::KNIGHT };            
+            ctx.op->get() = PromotionOperation{ Piece::Type::KNIGHT };            
             break;
         case Actions::CHOOSE_BISHOP:
-            ctx.op->get() = PromotionOperation{ PieceType::BISHOP };            
+            ctx.op->get() = PromotionOperation{ Piece::Type::BISHOP };            
             break;
         case Actions::CHOOSE_QUEEN:
-            ctx.op->get() = PromotionOperation{ PieceType::QUEEN };
+            ctx.op->get() = PromotionOperation{ Piece::Type::QUEEN };
             break;
         default:
             ctx.op->get() = EmptyOperation{};
@@ -68,7 +68,7 @@ public:
 
 template<typename HandlerContext>
 class GameOverHandler {
-    static std::string_view buildScoreString(GameState::Score score) {
+    static std::string_view buildScoreString(Score score) {
         char* begin = s_score;
         char* end = s_score + sizeof(s_score);
 
@@ -101,7 +101,7 @@ public:
                 , Color {0xDD, 0xDD, 0xDD, 0xFF}
                 , Color {0x44, 0x44, 0x44, 0xFF}
             }
-            , {{  (go.currentTeam == PieceColor::BLACK) ? "WHITE WIN!" : "BLACK WIN!"
+            , {{  (go.currentTeam == Piece::Color::BLACK) ? "WHITE WIN!" : "BLACK WIN!"
                 , (go.flag == GameState::Flags::CHECK_MATE)  ? "CHECK MATE" : "STALE MATE"
                 , "SCORE: WvB"
                 , buildScoreString(go.score)

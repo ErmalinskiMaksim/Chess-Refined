@@ -3,10 +3,10 @@
 
 #include "RTWgui/Widgets/Widget.h"
 #include "RTWgui/Requests.h"
-#include "Common.h"
+#include "GameState.h"
 
 struct EmptyOperation {};
-struct PromotionOperation { PieceType type; };
+struct PromotionOperation { Piece::Type type; };
 
 using OperationRegister = std::variant<EmptyOperation, PromotionOperation>;
 using OperationView = std::reference_wrapper<OperationRegister>;

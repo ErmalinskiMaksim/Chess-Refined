@@ -11,7 +11,8 @@ public:
     TextureMap() = default;
     TextureMap(Texture);
     Rect getTile(Piece) const noexcept;
-    const Texture& get() const noexcept;
+    TexturePtrType get() const noexcept;
+    bool empty() const noexcept;
 private:
     Texture m_texture; 
     float m_pieceWidth;

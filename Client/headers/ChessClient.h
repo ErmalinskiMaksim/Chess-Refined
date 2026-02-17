@@ -1,12 +1,10 @@
 #ifndef CHESS_CLIENT
 #define CHESS_CLIENT
 
-#include "Common.h"
 #include "Connection.h"
+#include "BoardTypes.h"
 #include "BoardWidget.h"
 #include "BoardHandlers.h"
-#include "HandlerContext.h"
-#include <variant>
 
 struct RestartMsg{ bool confirmed; };
 struct PromotionMsg{};
@@ -26,12 +24,8 @@ using DefaultBoardInteractor = BoardInteractor<BoardWidget
 >;
 using DefaultBoardInteractorView = std::reference_wrapper<DefaultBoardInteractor>;
 
+struct Packet;
 class ChessClient {
-    friend struct Response;
-    friend class Serializer;
-    using Executor = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-    using BoardType = std::array<Piece, 64>;
-    // using EndpointType = boost::asio::local::stream_protocol::endpoint;
 public:
     ChessClient(const ChessClient&) = delete;
     ChessClient(ChessClient&&) = delete;
@@ -51,9 +45,8 @@ public:
     void connect(std::string_view);
     void init();
     void poll();
-    void onConnect();
     void onDisconnect();
-    void dispatchServerResponse(ServerResponse);
+    void onPacket(Packet);
 
     // interactor registration 
     void registerInteractor(DefaultBoardInteractor*);
@@ -63,14 +56,14 @@ public:
     void requestRestart();
     void requestShutDown();
     void requestAvailableMoves(Pos);
-    void requestPromotion(PieceType);
+    void requestPromotion(Piece::Type);
     void requestCommitMove(Pos);
 
     // get local cache
     const BoardType& getBoardCache() const noexcept;
     Pos getSelectedPieceCache() const noexcept;
     GameState getCache() const noexcept;
-    bool isMyTurn() const noexcept;
+    bool canMove(Pos) const noexcept;
     
 private:
     inline static size_t posToIndex(Pos pos) {
@@ -86,10 +79,10 @@ private:
         GameState state;
         // this part is not updated on restart
         Pos selectedPiece;
-        PieceColor teamColor;
+        Piece::Color teamColor;
     } m_cache;
 
-    boost::asio::io_context m_io;
+    Context m_io;
     std::unique_ptr<Executor> m_workGuard;
     ConnectionPtr m_connection;
 

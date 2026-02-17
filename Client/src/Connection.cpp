@@ -1,26 +1,23 @@
 #include "Connection.h"
 #include "ChessClient.h"
-#include <print>
+#include "Serializer.h"
 
-Connection::Connection(ContextType& io, ClientView client)
+Connection::Connection(Context& io, ClientView client)
     : m_socket{io}
     , r_client{client}
 {}
 
-void Connection::connect(std::string_view path) {
+void Connection::start(std::string_view path) {
     boost::asio::local::stream_protocol::endpoint ep(path);
     m_socket.async_connect(ep,
         [self = shared_from_this()](auto ec) {
             if (!ec) { 
-                std::println("Connection succeeded");
                 self->readHeader();
-                self->r_client.get().onConnect();
             }
-            else std::println("Connection failed");
         });
 }
 
-void Connection::send(StreamType&& data) {
+void Connection::send(StreamType data) {
     boost::asio::post(m_socket.get_executor(),
         [self = shared_from_this(), data = std::move(data)]() mutable {
             bool writing = !self->m_sendQueue.empty();
@@ -29,6 +26,10 @@ void Connection::send(StreamType&& data) {
             if (!writing)
                 self->write();
         });
+}
+
+void Connection::close() {
+
 }
 
 void Connection::readHeader() {
@@ -49,7 +50,7 @@ void Connection::readPayload(uint8_t len) {
         boost::asio::buffer(m_payloadBuffer, len),
         [self = shared_from_this(), len](auto ec, size_t) {
             if (!ec) {
-                self->r_client.get().dispatchServerResponse(Serializer::deserialize(
+                self->r_client.get().onPacket(Serializer::deserialize(
                         { self->m_payloadBuffer, len }));
 
                 self->readHeader();

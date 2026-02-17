@@ -66,5 +66,5 @@ target_include_directories(ChessClient
 
 add_compile_options(-fdebug-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=.)   
 
-target_link_libraries(ChessClient PRIVATE RTWgui Boost::boost Threads::Threads)
+target_link_libraries(ChessClient PRIVATE RTWgui Common Boost::boost Threads::Threads)
 

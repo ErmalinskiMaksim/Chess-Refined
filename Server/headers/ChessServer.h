@@ -1,61 +1,59 @@
 #ifndef CHESS_SERVER_H
 #define CHESS_SERVER_H
 
-#include "Common.h"
-#include "Connection.h"
-#include "Board.h"
 #include <unordered_set>
+#include "Board.h"
+#include "Connection.h"
+#include "GameState.h"
 
+struct Packet;
 class ChessServer {
-    using AcceptorType = boost::asio::local::stream_protocol::acceptor;
-    using EndpointType = boost::asio::local::stream_protocol::endpoint;
     using ConnectionList = std::unordered_set<ConnectionPtr>;
-    using ContextType = boost::asio::io_context;
 public:
     ChessServer(std::string_view);
     ServerView getView() noexcept;
     void doAccept();
     void run();
-    void onConnect(ConnectionPtr);
-    void onDisconnect(ConnectionPtr);
-    void dispatchRequests(ConnectionPtr, Request);
+    void onConnect(const ConnectionPtr&);
+    void onDisconnect(const ConnectionPtr&);
+    void onPacket(const ConnectionPtr&, Packet);
 private:
     // sessions
-    void removeFromSession(ConnectionPtr);
-    void createSession(ConnectionPtr, ConnectionPtr);
+    void removeFromSession(const ConnectionPtr&);
+    void createSession(const ConnectionPtr&, const ConnectionPtr&);
 
     // connections
-    void addConnection(ConnectionPtr);
-    void removeConnection(ConnectionPtr);
+    void addConnection(const ConnectionPtr&);
+    void removeConnection(const ConnectionPtr&);
 
     //  client requests 
-    void performShutdown(ConnectionPtr);
-    void performRestart(ConnectionPtr);
-    void performAvailableMoves(ConnectionPtr, Pos);
-    void performPromotion(ConnectionPtr, Pos, PieceType);
-    void performCommitMove(ConnectionPtr, Pos, Pos);
-    void performGetCache(ConnectionPtr);
+    void performShutdown(const ConnectionPtr&);
+    void performRestart(const ConnectionPtr&);
+    void performAvailableMoves(const ConnectionPtr&, Pos);
+    void performPromotion(const ConnectionPtr&, Piece::Type, Pos);
+    void performCommitMove(const ConnectionPtr&, Pos, Pos);
+    void performGetCache(const ConnectionPtr&);
     
     // server actions
-    void notifyColor(ConnectionPtr, PieceColor);
-    void notifyDisconnect(ConnectionPtr);
+    void notifyColor(const ConnectionPtr&, Piece::Color) const;
+    void notifyDisconnect(const ConnectionPtr&) const;
+
+    // helpers
+    std::optional<size_t> findSession(const ConnectionPtr&) const noexcept;
 
     struct GameSession {
-        struct GameState {
+        struct State {
             Board board = {};
             Score score = {0x00, 0x00};
-            PieceColor currentTeam = PieceColor::WHITE;
+            Piece::Color currentTeam = Piece::Color::WHITE;
         } state;    
         ConnectionPtr white;
         ConnectionPtr black;
     };
 
-    // helpers
-    std::optional<size_t> findSession(ConnectionPtr);
-
     std::vector<GameSession> m_sessions;
-    ContextType m_io;
-    AcceptorType m_acceptor;
+    Context m_io;
+    Acceptor m_acceptor;
     ConnectionList m_connections;
     ConnectionPtr m_waitingPlayer;
 };

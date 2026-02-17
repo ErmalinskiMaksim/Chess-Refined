@@ -42,13 +42,17 @@ public:
         std::visit([&](auto&& ev) { process(ev); }, event);
     }
 
-    void onNetworkMessage(NetworkMessage&& msg) {
+    void update() {
+        ChessClient::get().poll();
+    }
+
+    void onNetworkMessage(NetworkMessage msg) {
         if (std::holds_alternative<RestartMsg>(msg)) [[unlikely]] {
             m_fsm = FSM{IdleBoardState{std::ref(*this)}};
             m_moves.clear();
             m_moveTiles.clear();
         }
-        std::visit([&](auto&& m) { m_fsm.process(std::move(m)); }, msg);
+        std::visit([&](auto&& m) { m_fsm.process(std::move(m)); }, std::move(msg));
     }
     
     OperationView getOperation() {
@@ -63,7 +67,6 @@ public:
     }
 
     void render(const Renderer& renderer, const Font&) const {
-        ChessClient::get().poll();
         // // draw hovered
         renderer.renderRect(&m_hoveredTile, HOVERED_TILE_COLOR);
 
@@ -74,7 +77,7 @@ public:
         renderer.resetBlendMode();
 
         // draw pieces
-        if (m_pieces.get().empty()) [[unlikely]] {
+        if (m_pieces.empty()) [[unlikely]] {
             m_pieces = TextureMap{Texture{renderer.get(), IMAGE_PIECE_MAP_PATH}};
         }
         const auto& board = ChessClient::get().getBoardCache();
@@ -82,7 +85,7 @@ public:
         for (auto i = 0uz; i < board.size(); ++i) {
             auto boardRect = boardWidget.rectFromPos(ChessClient::indexToPos(i));
             auto pieceRect = m_pieces.getTile(board[i]);
-            renderer.renderTexture(m_pieces.get().get(), &pieceRect, &boardRect);
+            renderer.renderTexture(m_pieces.get(), &pieceRect, &boardRect);
         }
     }
 

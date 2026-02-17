@@ -1,31 +1,32 @@
 #include "Board.h"
+#include "GameState.h"
 #include <utility>
 #include <algorithm>
 
 consteval BoardType initBoard() {
     BoardType board;
-    board[0] = { PieceType::ROOK,   PieceColor::WHITE};
-    board[1] = { PieceType::KNIGHT, PieceColor::WHITE};
-    board[2] = { PieceType::BISHOP, PieceColor::WHITE};
-    board[3] = { PieceType::QUEEN,  PieceColor::WHITE};
-    board[4] = { PieceType::KING,   PieceColor::WHITE};
-    board[5] = { PieceType::BISHOP, PieceColor::WHITE};
-    board[6] = { PieceType::KNIGHT, PieceColor::WHITE};
-    board[7] = { PieceType::ROOK,   PieceColor::WHITE};
+    board[0] = { Piece::Type::ROOK,   Piece::Color::WHITE};
+    board[1] = { Piece::Type::KNIGHT, Piece::Color::WHITE};
+    board[2] = { Piece::Type::BISHOP, Piece::Color::WHITE};
+    board[3] = { Piece::Type::QUEEN,  Piece::Color::WHITE};
+    board[4] = { Piece::Type::KING,   Piece::Color::WHITE};
+    board[5] = { Piece::Type::BISHOP, Piece::Color::WHITE};
+    board[6] = { Piece::Type::KNIGHT, Piece::Color::WHITE};
+    board[7] = { Piece::Type::ROOK,   Piece::Color::WHITE};
 
     auto i = 8uz;
-    while (i < 16uz) board[i++] = { PieceType::PAWN, PieceColor::WHITE };
-    while (i < 48uz) board[i++] = { PieceType::NONE, PieceColor::BLACK }; 
-    while (i < 56uz) board[i++] = { PieceType::PAWN, PieceColor::BLACK };
+    while (i < 16uz) board[i++] = { Piece::Type::PAWN, Piece::Color::WHITE };
+    while (i < 48uz) board[i++] = { Piece::Type::NONE, Piece::Color::BLACK }; 
+    while (i < 56uz) board[i++] = { Piece::Type::PAWN, Piece::Color::BLACK };
 
-    board[56] = { PieceType::ROOK,   PieceColor::BLACK};
-    board[57] = { PieceType::KNIGHT, PieceColor::BLACK};
-    board[58] = { PieceType::BISHOP, PieceColor::BLACK};
-    board[59] = { PieceType::QUEEN,  PieceColor::BLACK};
-    board[60] = { PieceType::KING,   PieceColor::BLACK};
-    board[61] = { PieceType::BISHOP, PieceColor::BLACK};
-    board[62] = { PieceType::KNIGHT, PieceColor::BLACK};
-    board[63] = { PieceType::ROOK,   PieceColor::BLACK};
+    board[56] = { Piece::Type::ROOK,   Piece::Color::BLACK};
+    board[57] = { Piece::Type::KNIGHT, Piece::Color::BLACK};
+    board[58] = { Piece::Type::BISHOP, Piece::Color::BLACK};
+    board[59] = { Piece::Type::QUEEN,  Piece::Color::BLACK};
+    board[60] = { Piece::Type::KING,   Piece::Color::BLACK};
+    board[61] = { Piece::Type::BISHOP, Piece::Color::BLACK};
+    board[62] = { Piece::Type::KNIGHT, Piece::Color::BLACK};
+    board[63] = { Piece::Type::ROOK,   Piece::Color::BLACK};
     
     return board;
 }
@@ -71,32 +72,32 @@ Board::Board()
     , m_enPassantEnabled{false}
 {}
 
-uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, PieceColor teamColor) noexcept {
+uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, Piece::Color teamColor) noexcept {
     // reset en passant flags
-    GameFlags flags = GameFlags::NONE;
+    auto flags = GameState::Flags::NONE;
     bool oldEnPassantEnabled = m_enPassantEnabled;
     Pos oldEnPassantTarget = m_enPassantTarget;
     m_enPassantEnabled = false;
 
-    PieceType capturedType = m_board[posToIndex(moveTo)].type;
+    Piece::Type capturedType = m_board[posToIndex(moveTo)].type;
     auto movedPiece = at(moveFrom);
     m_board[posToIndex(moveTo)] = 
-        std::exchange(m_board[posToIndex(moveFrom)], {PieceType::NONE, PieceColor::BLACK}); 
+        std::exchange(m_board[posToIndex(moveFrom)], {Piece::Type::NONE, Piece::Color::BLACK}); 
 
-    PieceColor oppositeTeamColor = (teamColor == PieceColor::WHITE) 
-        ? PieceColor::BLACK : PieceColor::WHITE;
-    auto& team = (teamColor == PieceColor::WHITE) ? m_whiteData : m_blackData;
+    Piece::Color oppositeTeamColor = (teamColor == Piece::Color::WHITE) 
+        ? Piece::Color::BLACK : Piece::Color::WHITE;
+    auto& team = (teamColor == Piece::Color::WHITE) ? m_whiteData : m_blackData;
 
     // update castling
     if (team.QSideCastling) { // left rook
-        auto rook = at(Pos(0, (movedPiece.col == PieceColor::WHITE) ? 0 : 7));
-        team.QSideCastling = (rook.type == PieceType::ROOK && rook.col == movedPiece.col);
+        auto rook = at(Pos(0, (movedPiece.col == Piece::Color::WHITE) ? 0 : 7));
+        team.QSideCastling = (rook.type == Piece::Type::ROOK && rook.col == movedPiece.col);
     }
     if (team.KSideCastling) { // right rook
-        auto rook = at(Pos(7, (movedPiece.col == PieceColor::WHITE) ? 0 : 7));
-        team.KSideCastling = (rook.type == PieceType::ROOK && rook.col == movedPiece.col);
+        auto rook = at(Pos(7, (movedPiece.col == Piece::Color::WHITE) ? 0 : 7));
+        team.KSideCastling = (rook.type == Piece::Type::ROOK && rook.col == movedPiece.col);
     }
-    if (movedPiece.type == PieceType::KING) {
+    if (movedPiece.type == Piece::Type::KING) {
         if (std::abs(team.kingPos.x - moveTo.x) == 2) {
             Pos oldRookPos; 
             Pos newRookPos;
@@ -113,62 +114,60 @@ uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, PieceColor teamColor) noexce
         team.QSideCastling = team.KSideCastling = false;
     }
     // enpassant and promotion
-    if (movedPiece.type == PieceType::PAWN) {
+    if (movedPiece.type == Piece::Type::PAWN) {
         // update enpassant 
         if (oldEnPassantEnabled && moveTo == oldEnPassantTarget) {
-            m_board[posToIndex(Pos(moveTo.x, moveFrom.y))].type = PieceType::NONE;
+            m_board[posToIndex(Pos(moveTo.x, moveFrom.y))].type = Piece::Type::NONE;
         } 
         if (std::abs(moveFrom.y - moveTo.y) == 2) {
             m_enPassantEnabled = true;
             m_enPassantTarget = posAhead(moveFrom, movedPiece.col);
         }  
         // check promotion
-        if (moveTo.y == ((movedPiece.col == PieceColor::BLACK) ? 0 : 7))
-            flags = GameFlags::PROMOTION;
+        if (moveTo.y == ((movedPiece.col == Piece::Color::BLACK) ? 0 : 7))
+            flags = GameState::Flags::PROMOTION;
     }
 
     if (!hasAnyMoves(oppositeTeamColor)) {
-        auto& oppositeTeam = (oppositeTeamColor == PieceColor::WHITE)
+        auto& oppositeTeam = (oppositeTeamColor == Piece::Color::WHITE)
             ? m_whiteData : m_blackData;
         flags = (isKingAttacked(oppositeTeam.kingPos, oppositeTeamColor))
-            ? GameFlags::CHECK_MATE : GameFlags::STALE_MATE;
+            ? GameState::Flags::CHECK_MATE : GameState::Flags::STALE_MATE;
     }
 
     // get score
     uint8_t score;
     switch(capturedType) {
-        case PieceType::PAWN:   score = 1u; break;
-        case PieceType::ROOK:   score = 5u; break;
-        case PieceType::KNIGHT: score = 3u; break;
-        case PieceType::BISHOP: score = 3u; break;
-        case PieceType::QUEEN:  score = 9u; break;
+        case Piece::Type::PAWN:   score = 1u; break;
+        case Piece::Type::ROOK:   score = 5u; break;
+        case Piece::Type::KNIGHT: score = 3u; break;
+        case Piece::Type::BISHOP: score = 3u; break;
+        case Piece::Type::QUEEN:  score = 9u; break;
         default:                score = 0u; break;
     }
     return score + static_cast<uint8_t>(flags);
 }
 
-void Board::promote(Pos pos, PieceType type) noexcept {
+void Board::promote(Pos pos, Piece::Type type) noexcept {
     m_board[posToIndex(pos)].type = type; 
 }
 
-bool Board::hasAnyMoves(PieceColor teamColor) noexcept {
+bool Board::hasAnyMoves(Piece::Color teamColor) noexcept {
     for (auto i = 0uz; i < m_board.size(); ++i) {
-        if (m_board[i].col != teamColor || m_board[i].type == PieceType::NONE)
+        if (m_board[i].col != teamColor || m_board[i].type == Piece::Type::NONE)
             continue;
         if (!(calculatePieceMoves(indexToPos(i), teamColor).empty())) return true;
     }
     return false;
 }
 
-Moves Board::calculatePieceMoves(Pos moveFrom, PieceColor teamColor) noexcept {
+Moves Board::calculatePieceMoves(Pos moveFrom, Piece::Color teamColor) noexcept {
     Moves moves{};
     auto movingPiece = at(moveFrom);
-    // wrong team
-    if (movingPiece.col != teamColor) return {};
 
-    auto& team = (teamColor == PieceColor::WHITE) ? m_whiteData : m_blackData;
+    auto& team = (teamColor == Piece::Color::WHITE) ? m_whiteData : m_blackData;
     switch (movingPiece.type) {
-        case PieceType::PAWN:   
+        case Piece::Type::PAWN:   
             moves = [&]() {
                 auto mvs = calculatePawnMoves(moveFrom, teamColor);
                 // en passant 
@@ -180,16 +179,16 @@ Moves Board::calculatePieceMoves(Pos moveFrom, PieceColor teamColor) noexcept {
                 return mvs;
             }();
             break;
-        case PieceType::ROOK:   
+        case Piece::Type::ROOK:   
             moves = calculateSlidingMoves(rookDirections, moveFrom, teamColor);
             break;
-        case PieceType::KNIGHT: 
+        case Piece::Type::KNIGHT: 
             moves = calculateRoundMoves  (knightDirections, moveFrom, teamColor);
             break;
-        case PieceType::BISHOP: 
+        case Piece::Type::BISHOP: 
             moves = calculateSlidingMoves(bishopDirections, moveFrom, teamColor);
             break;
-        case PieceType::QUEEN:  
+        case Piece::Type::QUEEN:  
             moves = [&]() { 
                 auto mvs = calculateSlidingMoves(rookDirections, moveFrom, teamColor);
                 auto bishopMoves = calculateSlidingMoves(bishopDirections, moveFrom, teamColor);
@@ -199,7 +198,7 @@ Moves Board::calculatePieceMoves(Pos moveFrom, PieceColor teamColor) noexcept {
                 return mvs;
             }();
             break;
-        case PieceType::KING:   
+        case Piece::Type::KING:   
             moves = [&]() {
                 auto mvs = calculateRoundMoves  (kingDirections, moveFrom, teamColor);
                 // castling 
@@ -220,11 +219,10 @@ Moves Board::calculatePieceMoves(Pos moveFrom, PieceColor teamColor) noexcept {
         if (!isKingEndangered(team.kingPos, teamColor, moveFrom, move))
             filteredMoves.emplace_back(move);
     }
-    filteredMoves.shrink_to_fit();
     return filteredMoves;
 }
 
-Moves Board::calculatePawnMoves(Pos pos, PieceColor pawnColor) const noexcept {
+Moves Board::calculatePawnMoves(Pos pos, Piece::Color pawnColor) const noexcept {
     Moves moves;
     moves.reserve(4);
 
@@ -257,11 +255,10 @@ Moves Board::calculatePawnMoves(Pos pos, PieceColor pawnColor) const noexcept {
         }
 	}
 
-    moves.shrink_to_fit();
     return moves;
 }
 
-Moves Board::calculateSlidingMoves(const Directions& dirs, Pos pos, PieceColor myColor) const noexcept {
+Moves Board::calculateSlidingMoves(const Directions& dirs, Pos pos, Piece::Color myColor) const noexcept {
     Moves moves;
     moves.reserve(14);
 
@@ -275,11 +272,10 @@ Moves Board::calculateSlidingMoves(const Directions& dirs, Pos pos, PieceColor m
             }
         }
 
-    moves.shrink_to_fit();
     return moves;
 }
 
-Moves Board::calculateRoundMoves(const RoundDirections& dirs, Pos pos, PieceColor myColor) const noexcept {
+Moves Board::calculateRoundMoves(const RoundDirections& dirs, Pos pos, Piece::Color myColor) const noexcept {
     Moves moves;
     moves.reserve(8);
 
@@ -292,11 +288,10 @@ Moves Board::calculateRoundMoves(const RoundDirections& dirs, Pos pos, PieceColo
         }
     }
 
-    moves.shrink_to_fit();
     return moves;
 }
 
-bool Board::canCastle(Pos kingPos, PieceColor kingCol, bool isQSide) const noexcept {
+bool Board::canCastle(Pos kingPos, Piece::Color kingCol, bool isQSide) const noexcept {
     Pos closeTile = {1, 0};
     if (isQSide) {
         if (!isEmpty(at(kingPos + Pos{-3, 0}))) return false;
@@ -312,11 +307,11 @@ bool Board::canCastle(Pos kingPos, PieceColor kingCol, bool isQSide) const noexc
     return false;
 }
 
-bool Board::isKingEndangered(Pos kingPos, PieceColor kingCol, Pos moveFrom, Pos moveTo) noexcept {
-    const auto movedPiece = std::exchange(m_board[posToIndex(moveFrom)], {PieceType::NONE, PieceColor::BLACK});
+bool Board::isKingEndangered(Pos kingPos, Piece::Color kingCol, Pos moveFrom, Pos moveTo) noexcept {
+    const auto movedPiece = std::exchange(m_board[posToIndex(moveFrom)], {Piece::Type::NONE, Piece::Color::BLACK});
     const auto replacedPiece = std::exchange(m_board[posToIndex(moveTo)], movedPiece);
 
-    if (movedPiece.type == PieceType::KING) kingPos = moveTo;
+    if (movedPiece.type == Piece::Type::KING) kingPos = moveTo;
     bool isAttacked = isKingAttacked(kingPos, kingCol);
 
     m_board[posToIndex(moveFrom)] = movedPiece;
@@ -325,26 +320,26 @@ bool Board::isKingEndangered(Pos kingPos, PieceColor kingCol, Pos moveFrom, Pos 
     return isAttacked;
 }
 
-bool Board::isKingAttacked(Pos kingPos, PieceColor kingCol) const noexcept {
+bool Board::isKingAttacked(Pos kingPos, Piece::Color kingCol) const noexcept {
     return   isKingAttackedByPawn   (kingPos, kingCol)
-          || isKingAttackedBySliding(rookDirections,   kingPos, {PieceType::ROOK,   kingCol})
-          || isKingAttackedBySliding(bishopDirections, kingPos, {PieceType::BISHOP, kingCol})
-          || isKingAttackedByRound  (knightDirections, kingPos, {PieceType::KNIGHT, kingCol})
-          || isKingAttackedByRound  (kingDirections,   kingPos, {PieceType::KING,   kingCol});
+          || isKingAttackedBySliding(rookDirections,   kingPos, {Piece::Type::ROOK,   kingCol})
+          || isKingAttackedBySliding(bishopDirections, kingPos, {Piece::Type::BISHOP, kingCol})
+          || isKingAttackedByRound  (knightDirections, kingPos, {Piece::Type::KNIGHT, kingCol})
+          || isKingAttackedByRound  (kingDirections,   kingPos, {Piece::Type::KING,   kingCol});
 }
 
-bool Board::isKingAttackedByPawn(Pos kingPos, PieceColor kingCol) const noexcept {
+bool Board::isKingAttackedByPawn(Pos kingPos, Piece::Color kingCol) const noexcept {
     auto leftAhead = posAhead(Pos(kingPos.x-1, kingPos.y), kingCol);
     auto rightAhead = posAhead(Pos(kingPos.x+1, kingPos.y), kingCol);
 
     if (inLegalBounds(leftAhead)) {
         auto pieceleftAhead = at(leftAhead);
-        if (pieceleftAhead.type == PieceType::PAWN && pieceleftAhead.col != kingCol)
+        if (pieceleftAhead.type == Piece::Type::PAWN && pieceleftAhead.col != kingCol)
             return true;
     }
     if (inLegalBounds(rightAhead)) {
         auto pieceRightAhead = at(rightAhead);
-        if (pieceRightAhead.type == PieceType::PAWN && pieceRightAhead.col != kingCol)
+        if (pieceRightAhead.type == Piece::Type::PAWN && pieceRightAhead.col != kingCol)
             return true;
     }
     return false;
@@ -356,7 +351,7 @@ bool Board::isKingAttackedBySliding(const Directions& dirs, Pos kingPos, Piece t
         for (Pos i = kingPos + dir; inLegalBounds(i); i = i + dir) {
             auto piece = at(i);
             if (!isEmpty(piece)) {
-                if ((piece.type == PieceType::QUEEN || piece.type == target.type)
+                if ((piece.type == Piece::Type::QUEEN || piece.type == target.type)
                         && piece.col != target.col) 
                     return true;
                 break;

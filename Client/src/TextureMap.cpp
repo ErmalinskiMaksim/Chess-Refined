@@ -7,18 +7,22 @@ TextureMap::TextureMap(Texture texture)
 {}
 
 Rect TextureMap::getTile(Piece piece) const noexcept {
-    float y = (piece.col == PieceColor::WHITE) ? m_pieceHeight : 0.0f;
+    float y = (piece.col == Piece::Color::WHITE) ? m_pieceHeight : 0.0f;
     switch(piece.type) {
-        case PieceType::QUEEN:  return Rect{0.0f          , y, m_pieceWidth, m_pieceHeight}; 
-        case PieceType::KING:   return Rect{m_pieceWidth  , y, m_pieceWidth, m_pieceHeight};
-        case PieceType::ROOK:   return Rect{m_pieceWidth*2, y, m_pieceWidth, m_pieceHeight};
-        case PieceType::KNIGHT: return Rect{m_pieceWidth*3, y, m_pieceWidth, m_pieceHeight};
-        case PieceType::BISHOP: return Rect{m_pieceWidth*4, y, m_pieceWidth, m_pieceHeight};
-        case PieceType::PAWN:   return Rect{m_pieceWidth*5, y, m_pieceWidth, m_pieceHeight};
+        case Piece::Type::QUEEN:  return Rect{0.0f          , y, m_pieceWidth, m_pieceHeight}; 
+        case Piece::Type::KING:   return Rect{m_pieceWidth  , y, m_pieceWidth, m_pieceHeight};
+        case Piece::Type::ROOK:   return Rect{m_pieceWidth*2, y, m_pieceWidth, m_pieceHeight};
+        case Piece::Type::KNIGHT: return Rect{m_pieceWidth*3, y, m_pieceWidth, m_pieceHeight};
+        case Piece::Type::BISHOP: return Rect{m_pieceWidth*4, y, m_pieceWidth, m_pieceHeight};
+        case Piece::Type::PAWN:   return Rect{m_pieceWidth*5, y, m_pieceWidth, m_pieceHeight};
         default: return Rect{};
     }
 }
 
-const Texture& TextureMap::get() const noexcept {
-    return m_texture;
+TexturePtrType TextureMap::get() const noexcept {
+    return m_texture.get();
+}
+
+bool TextureMap::empty() const noexcept {
+    return m_texture.empty();
 }
