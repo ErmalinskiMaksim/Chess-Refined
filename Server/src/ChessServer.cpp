@@ -2,10 +2,10 @@
 #include "Serializer.h"
 // #include <print>
 
-ChessServer::ChessServer(std::string_view path)
+ChessServer::ChessServer(/* UNIX std::string_view path*/)
     : m_sessions{}
     , m_io{}
-    , m_acceptor{m_io, Endpoint{path}}
+    , m_acceptor{m_io, Endpoint{/*UNIX path*/ boost::asio::ip::tcp::v4(), 5000}}
     , m_connections{}
     , m_waitingPlayer{}
 {}
@@ -115,20 +115,15 @@ void ChessServer::createSession(const ConnectionPtr& white, const ConnectionPtr&
     // std::println("[SVR]: Creating a session");
     m_sessions.push_back({{}, white, black});
     const auto& session = m_sessions.back();
-    white->send(Serializer::serialize(
+    auto packet = Serializer::serialize(
         ChessClientCache{session.state.board.get()
         , ::GameState{session.state.score
         , GameState::Flags::NONE
         , Piece::Color::WHITE}}
         , ReqType::GET_CACHE
-    ));
-    black->send(Serializer::serialize(
-        ChessClientCache{session.state.board.get()
-        , ::GameState{session.state.score
-        , GameState::Flags::NONE
-        , Piece::Color::BLACK}}
-        , ReqType::GET_CACHE
-    ));
+    );
+    white->send(packet);
+    black->send(std::move(packet));
 }
 
 void ChessServer::addConnection(const ConnectionPtr& conn) {

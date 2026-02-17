@@ -8,13 +8,13 @@ ChessClient::ChessClient()
     : m_cache{}
 {}
 
-void ChessClient::connect(std::string_view path) {
+void ChessClient::connect(/*std::string_view path*/) {
     // std::println("[CLI]: connecting...");
     if (!m_initialized)
         init();
 
     m_connection = std::make_shared<Connection>(m_io, *this);
-    m_connection->start(path);
+    m_connection->start(/*path*/);
 }
 
 void ChessClient::poll() {
@@ -26,9 +26,7 @@ void ChessClient::init() {
         return;
 
     // std::println("[CLI]: initializing...");
-    m_workGuard = std::make_unique<
-        boost::asio::executor_work_guard<boost::asio::io_context::executor_type>
-    >(m_io.get_executor());
+    m_workGuard = std::make_unique<Executor>(m_io.get_executor());
 
     m_initialized = true;
 }

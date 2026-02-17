@@ -1,20 +1,32 @@
 #include "Connection.h"
 #include "ChessClient.h"
 #include "Serializer.h"
+#include <print>
 
 Connection::Connection(Context& io, ClientView client)
     : m_socket{io}
     , r_client{client}
 {}
 
-void Connection::start(std::string_view path) {
-    boost::asio::local::stream_protocol::endpoint ep(path);
-    m_socket.async_connect(ep,
-        [self = shared_from_this()](auto ec) {
+void Connection::start(/*UNIX std::string_view path*/) {
+    Resolver resolver(m_socket.get_executor()); // TCP
+    // Endpoint ep(path); // UNIX
+    // m_socket.async_connect(ep,
+    //     [self = shared_from_this()](auto ec) {
+    //         if (!ec) { 
+    //             self->m_socket.set_option(boost::asio::ip::tcp::no_delay(true)); // TCP
+    //             self->readHeader();
+    //         } else std::println("failed to connect");
+    //     });
+    auto endpoints = resolver.resolve("127.0.0.1", "5000"); // TCP
+    boost::asio::async_connect(m_socket, endpoints,         
+        [self = shared_from_this()](auto ec, const Endpoint&) {
             if (!ec) { 
+                self->m_socket.set_option(boost::asio::ip::tcp::no_delay(true)); // TCP
                 self->readHeader();
-            }
+            } else std::println("failed to connect");
         });
+ // )
 }
 
 void Connection::send(StreamType data) {

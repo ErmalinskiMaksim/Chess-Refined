@@ -4,7 +4,7 @@
 
 int main() {
     ChessClient::get().init();
-    ChessClient::get().connect("/tmp/chess-refined.sock");
+    ChessClient::get().connect(/*"/tmp/chess-refined.sock"*/);
 
     try {
         RTWgui::run();

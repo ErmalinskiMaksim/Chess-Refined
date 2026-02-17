@@ -9,6 +9,7 @@ Connection::Connection(Socket sock, ServerView svr)
 {}
 
 void Connection::start() {
+    m_socket.set_option(boost::asio::ip::tcp::no_delay(true)); // TCP
     readHeader();
 }
 

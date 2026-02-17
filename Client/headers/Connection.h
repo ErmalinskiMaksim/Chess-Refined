@@ -11,7 +11,13 @@ class Connection;
 
 using Context = boost::asio::io_context;
 using Executor = boost::asio::executor_work_guard<Context::executor_type>;
-using SocketType = boost::asio::local::stream_protocol::socket;
+// UNIX_DOMAIN
+// using Endpoint = boost::asio::local::stream_protocol::endpoint;
+// using Socket = boost::asio::local::stream_protocol::socket;
+// TCP
+using Resolver = boost::asio::ip::tcp::resolver;
+using Endpoint = boost::asio::ip::tcp::endpoint;
+using Socket = boost::asio::ip::tcp::socket;
 
 using ConnectionPtr = std::shared_ptr<Connection>;
 using ClientView = std::reference_wrapper<ChessClient>;
@@ -21,7 +27,7 @@ class Connection : public IConnection
 public:
     Connection(Context&, ClientView);
 
-    void start(std::string_view);
+    void start(/*UNIX std::string_view*/);
     void send(StreamType) override;
     void close() override;
 private:
@@ -29,7 +35,7 @@ private:
     void readPayload(uint8_t);
     void write();
 
-    SocketType m_socket;
+    Socket m_socket;
     std::deque<StreamType> m_sendQueue;
     ClientView r_client;
 
