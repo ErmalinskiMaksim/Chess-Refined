@@ -12,7 +12,6 @@ The project depends on RTWgui and boost::asio.
 The game consists of a chess server and player clients. The server can handle many sessions at once. To run a single session, first launch the server, then launch two clients. The game doesn't support single client mode.\
 *Pieces won't be visible until the second client joins the session.*\
 ***THE GAME SUPPORTS LOCAL HOST AND LAN MODE***
-docker compose up --scale client=3
 ## Player's guide
 * Select a piece by LMB clicking it
 * Unselect a piece by LMB clicking the selected piece
