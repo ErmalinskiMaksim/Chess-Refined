@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  server:
+    build: .
+    container_name: ChessServer 
+    command: ./build/Server/ChessServer
+    ports:
+      - "5000:5000"
+
+  client:
+    build: .
+    depends_on:
+      - server
+    command: ./build/Client/ChessClient server
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix

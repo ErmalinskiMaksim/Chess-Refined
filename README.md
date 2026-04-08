@@ -11,8 +11,8 @@ The project depends on RTWgui and boost::asio.
 ## How does the game work?
 The game consists of a chess server and player clients. The server can handle many sessions at once. To run a single session, first launch the server, then launch two clients. The game doesn't support single client mode.\
 *Pieces won't be visible until the second client joins the session.*\
-***AT THE MOMENT, THE GAME ONLY SUPPORTS LOCAL HOST MODE. REAL ROUTING IS COMING SOON***
-
+***THE GAME SUPPORTS LOCAL HOST AND LAN MODE***
+docker compose up --scale client=3
 ## Player's guide
 * Select a piece by LMB clicking it
 * Unselect a piece by LMB clicking the selected piece
@@ -34,8 +34,23 @@ cmake --build build
 # first, run the server
 build/Server/ChessServer
 # then run clients
+build/Client/ChessClient [optional: ip address of the server] 
+```
+You can run the game in both the local host mode and a LAN mode. To run with local host settings, the clients must be run as:
+```bash 
 build/Client/ChessClient
 ```
+Alternatively, to run in a LAN mode, provide ip address of the server:
+```bash
+build/Client/ChessClient [ipv4 address] 
+```
+
+## Testing connection
+To test if the game runs properly, there are ready docker-compose files. Just run:
+```docker
+docker compose up --build
+docker compose up --scale client=2
+```
 ## Future updates:
-* full support for LAN network mode
+* CppUTest integration
 * AI

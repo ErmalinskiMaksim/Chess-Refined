@@ -42,7 +42,7 @@ public:
     }
 
     // connection
-    void connect();
+    void connect(std::string_view);
     void init();
     void poll();
     void onDisconnect();

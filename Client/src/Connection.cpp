@@ -8,9 +8,9 @@ Connection::Connection(Context& io, ClientView client)
     , r_client{client}
 {}
 
-void Connection::start() {
+void Connection::start(std::string_view ipAddr) {
     Resolver resolver(m_socket.get_executor()); 
-    auto endpoints = resolver.resolve("127.0.0.1", "5000"); 
+    auto endpoints = resolver.resolve(ipAddr, "5000"); 
     boost::asio::async_connect(m_socket, endpoints,         
         [self = shared_from_this()](auto ec, const Endpoint&) {
             if (!ec) { 

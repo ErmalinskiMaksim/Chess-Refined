@@ -2,9 +2,11 @@
 #include "ChessClient.h"
 #include <print>
 
-int main() {
+int main(int argc, char* argv[]) {
+    constexpr std::string_view fallbackIP = "127.0.0.1";
+
     ChessClient::get().init();
-    ChessClient::get().connect();
+    ChessClient::get().connect((argc > 1) ? argv[1] : fallbackIP);
 
     try {
         RTWgui::run();

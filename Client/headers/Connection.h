@@ -23,7 +23,7 @@ class Connection : public IConnection
 public:
     Connection(Context&, ClientView);
 
-    void start();
+    void start(std::string_view);
     void send(StreamType) override;
     void close() override;
 private:
