@@ -8,13 +8,13 @@ ChessClient::ChessClient()
     : m_cache{}
 {}
 
-void ChessClient::connect(/*std::string_view path*/) {
+void ChessClient::connect() {
     // std::println("[CLI]: connecting...");
     if (!m_initialized)
         init();
 
     m_connection = std::make_shared<Connection>(m_io, *this);
-    m_connection->start(/*path*/);
+    m_connection->start();
 }
 
 void ChessClient::poll() {

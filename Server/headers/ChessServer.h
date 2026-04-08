@@ -10,7 +10,7 @@ struct Packet;
 class ChessServer {
     using ConnectionList = std::unordered_set<ConnectionPtr>;
 public:
-    ChessServer(/*UNIX std::string_view*/);
+    ChessServer();
     ServerView getView() noexcept;
     void doAccept();
     void run();

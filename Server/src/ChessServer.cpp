@@ -1,11 +1,10 @@
 #include "ChessServer.h"
 #include "Serializer.h"
-// #include <print>
 
-ChessServer::ChessServer(/* UNIX std::string_view path*/)
+ChessServer::ChessServer()
     : m_sessions{}
     , m_io{}
-    , m_acceptor{m_io, Endpoint{/*UNIX path*/ boost::asio::ip::tcp::v4(), 5000}}
+    , m_acceptor{m_io, Endpoint{boost::asio::ip::tcp::v4(), 5000}}
     , m_connections{}
     , m_waitingPlayer{}
 {}

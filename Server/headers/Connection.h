@@ -9,19 +9,14 @@
 class ChessServer;
 class Connection;
 
-using Context = boost::asio::io_context;
-// UNIX
-// using Acceptor = boost::asio::local::stream_protocol::acceptor;
-// using Endpoint = boost::asio::local::stream_protocol::endpoint;
-// using Socket = boost::asio::local::stream_protocol::socket;
-// TCP
-using Acceptor = boost::asio::ip::tcp::acceptor;
-using Socket = boost::asio::ip::tcp::socket;
+using Context   = boost::asio::io_context;
+using Acceptor  = boost::asio::ip::tcp::acceptor;
+using Socket    = boost::asio::ip::tcp::socket;
 using Endpoint  = boost::asio::ip::tcp::endpoint;
-using Strand = boost::asio::strand<Socket::executor_type>;
+using Strand    = boost::asio::strand<Socket::executor_type>;
 
 using ConnectionPtr = std::shared_ptr<Connection>;
-using ServerView = std::reference_wrapper<ChessServer>;
+using ServerView    = std::reference_wrapper<ChessServer>;
 
 class Connection : public IConnection 
                  , public std::enable_shared_from_this<Connection> {

@@ -8,25 +8,16 @@ Connection::Connection(Context& io, ClientView client)
     , r_client{client}
 {}
 
-void Connection::start(/*UNIX std::string_view path*/) {
-    Resolver resolver(m_socket.get_executor()); // TCP
-    // Endpoint ep(path); // UNIX
-    // m_socket.async_connect(ep,
-    //     [self = shared_from_this()](auto ec) {
-    //         if (!ec) { 
-    //             self->m_socket.set_option(boost::asio::ip::tcp::no_delay(true)); // TCP
-    //             self->readHeader();
-    //         } else std::println("failed to connect");
-    //     });
-    auto endpoints = resolver.resolve("127.0.0.1", "5000"); // TCP
+void Connection::start() {
+    Resolver resolver(m_socket.get_executor()); 
+    auto endpoints = resolver.resolve("127.0.0.1", "5000"); 
     boost::asio::async_connect(m_socket, endpoints,         
         [self = shared_from_this()](auto ec, const Endpoint&) {
             if (!ec) { 
-                self->m_socket.set_option(boost::asio::ip::tcp::no_delay(true)); // TCP
+                self->m_socket.set_option(boost::asio::ip::tcp::no_delay(true)); 
                 self->readHeader();
             } else std::println("failed to connect");
         });
- // )
 }
 
 void Connection::send(StreamType data) {

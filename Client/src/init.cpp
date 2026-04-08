@@ -15,11 +15,11 @@ const unsigned WINDOW_HEIGHT = TILE_SIZE*8;
 
 // Font
 const std::string_view MAIN_FONT_PATH = "Client/Res/Fonts/Monoid-Regular.ttf";
-const float MAIN_FONT_SZ = 32;
+const unsigned MAIN_FONT_SZ = 32u;
 
 const size_t MAIN_LAYER_COUNT = 1;
 
-void initializeLayers(LayerArray& layers, float mainFontCharWidth, float mainFontCharHeight) {
+void initializeLayers(LayerOwningArray& layers, float mainFontCharWidth, float mainFontCharHeight) {
     constexpr int BOARD_HEIGHT = TILE_SIZE*8;
     constexpr int BOARD_WIDTH = TILE_SIZE*8; 
 

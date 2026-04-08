@@ -9,25 +9,21 @@
 class ChessClient;
 class Connection;
 
-using Context = boost::asio::io_context;
-using Executor = boost::asio::executor_work_guard<Context::executor_type>;
-// UNIX_DOMAIN
-// using Endpoint = boost::asio::local::stream_protocol::endpoint;
-// using Socket = boost::asio::local::stream_protocol::socket;
-// TCP
-using Resolver = boost::asio::ip::tcp::resolver;
-using Endpoint = boost::asio::ip::tcp::endpoint;
-using Socket = boost::asio::ip::tcp::socket;
+using Context   = boost::asio::io_context;
+using Executor  = boost::asio::executor_work_guard<Context::executor_type>;
+using Resolver  = boost::asio::ip::tcp::resolver;
+using Endpoint  = boost::asio::ip::tcp::endpoint;
+using Socket    = boost::asio::ip::tcp::socket;
 
 using ConnectionPtr = std::shared_ptr<Connection>;
-using ClientView = std::reference_wrapper<ChessClient>;
+using ClientView    = std::reference_wrapper<ChessClient>;
 
 class Connection : public IConnection
                  , public std::enable_shared_from_this<Connection> {
 public:
     Connection(Context&, ClientView);
 
-    void start(/*UNIX std::string_view*/);
+    void start();
     void send(StreamType) override;
     void close() override;
 private:
