@@ -18,7 +18,10 @@ using Socket    = boost::asio::ip::tcp::socket;
 using ConnectionPtr = std::shared_ptr<Connection>;
 using ClientView    = std::reference_wrapper<ChessClient>;
 
-class Connection : public IConnection
+// Implementation of IConnection interface. 
+// * Represents a boost::asio TCP connection (is responsible for its lifetime)
+// * Performs asynchronous read() and write() operations to the server
+class Connection final : public IConnection
                  , public std::enable_shared_from_this<Connection> {
 public:
     Connection(Context&, ClientView);

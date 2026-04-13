@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+// An in-game piece position representation
 struct Pos {
     bool operator==(Pos other) const noexcept {
         return (other.x == x && other.y == y);

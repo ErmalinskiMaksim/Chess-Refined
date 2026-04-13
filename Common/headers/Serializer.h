@@ -2,31 +2,28 @@
 #define SERIALIZER_H
 
 // #include <print>
-#include "GameState.h"
-#include "BoardTypes.h"
+#include "GameStateCache.h"
 #include "IConnection.h"
 
+// Request tags exchanged between client and server
 enum class ReqType : uint8_t {
       CALCULATE_MOVES   = 0x00
     , COMMIT_MOVE       = 0x01
     , PROMOTE           = 0x02
     , RESTART           = 0x03
-    , GET_CACHE         = 0x04
-    , SHUT_DOWN         = 0x05
-    , ASSIGN_COLOR      = 0x06
-    , PLAYER_DISCONNECT = 0x07
+    , SHUT_DOWN         = 0x04
+    , ASSIGN_COLOR      = 0x05
+    , PLAYER_DISCONNECT = 0x06
 };
 
+// A data format that the client/server expect from the connection
 struct Packet {
     StreamTypeView payload;
     ReqType type;
 };
 
-struct ChessClientCache {
-    BoardType board;
-    GameState state;
-};
-
+// Main data serializer-deserializer.
+// * Fulfils the role of an adapter between the client/server and connection
 class Serializer {
 public:
     static Packet deserialize(StreamTypeView data) {
@@ -104,7 +101,7 @@ public:
         return buff;
     }
 
-    static StreamType serialize(const ChessClientCache& cache, ReqType type) {
+    static StreamType serialize(const GameStateCache& cache, ReqType type) {
         // std::println("Serializing cache");
         // board = 64 *sizeof(Piece) = 128 bytes; state = 4 bytes
         auto sz = static_cast<uint8_t>(

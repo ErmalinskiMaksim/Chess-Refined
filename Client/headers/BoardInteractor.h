@@ -2,13 +2,15 @@
 #define BOARD_INTERACTOR_H
 
 #include "RTWgui/Interactors/Interactor.h"
+#include "ChessClient.h"
 #include "BoardStateMachine.h"
 #include "TextureMap.h"
 
 constexpr Color HOVERED_TILE_COLOR = {0x00, 0xFF, 0xFF, 0x77};
 constexpr Color MOVE_TILE_COLOR = Color{0xFF, 0x00, 0xFF, 0x77};
 
-template<WidgetType MainWidget, typename ContextType, typename... Handlers>
+// The main GUI-side class that is responsible for handling GUI logic of the chess board
+template<WidgetType MainWidget, HandlerContextType ContextType, typename... Handlers>
 class BoardInteractor : public Interactor{
     friend IdleBoardState;
     friend MoveWaitingState;
@@ -21,41 +23,28 @@ class BoardInteractor : public Interactor{
     using FSM = BoardStateMachine<IdleBoardState, MoveWaitingState, MoveSelectionBoardState
         , MoveCommitWaitingState, PromotionCommitWaitingState, GameOverBoardState>; 
 public:
-    static constexpr bool hasOperations = true;
-
     BoardInteractor(NonModalLayerCreateRequest::Payload&&, BoardWidgetRef board, RequestView req)
-        : m_moveTiles{}
+        : m_gameCache{}
+        , m_moveTiles{}
         , m_hoveredTile{}
         , r_widget{board}
         , r_layersRequest{req}
         , m_fsm{IdleBoardState{std::ref(*this)}}
         , m_operation(EmptyOperation{})
-    {
-        ChessClient::get().registerInteractor(this);
-    }
+    {}
 
-    ~BoardInteractor() {
-        ChessClient::get().unregisterInteractor();
-    }
-    
     void dispatchEvents(const LayerEvent& event) {
         std::visit([&](auto&& ev) { process(ev); }, event);
     }
 
+    // Responsibility: poll (non-blockingly) the message queue for any new 
+    // messages coming from the network thread and process it if found any. 
     void update() {
-        ChessClient::get().poll();
+        while (auto msg = g_MQ.net2gui.tryPop())
+            onNetworkMessage(*msg);
     }
 
-    void onNetworkMessage(NetworkMessage msg) {
-        if (std::holds_alternative<RestartMsg>(msg)) [[unlikely]] {
-            m_fsm = FSM{IdleBoardState{std::ref(*this)}};
-            m_moves.clear();
-            m_moveTiles.clear();
-        }
-        std::visit([&](auto&& m) { m_fsm.process(std::move(m)); }, std::move(msg));
-    }
-    
-    OperationView getOperation() {
+    OperationView getOperation() noexcept {
         return std::ref(m_operation);
     } 
 
@@ -80,11 +69,10 @@ public:
         if (m_pieces.empty()) [[unlikely]] {
             m_pieces = TextureMap{Texture{renderer.get(), IMAGE_PIECE_MAP_PATH}};
         }
-        const auto& board = ChessClient::get().getBoardCache();
         const auto& boardWidget = r_widget.get();
-        for (auto i = 0uz; i < board.size(); ++i) {
+        for (auto i = 0uz; i < m_gameCache.board.size(); ++i) {
             auto boardRect = boardWidget.rectFromPos(ChessClient::indexToPos(i));
-            auto pieceRect = m_pieces.getTile(board[i]);
+            auto pieceRect = m_pieces.getTile(m_gameCache.board[i]);
             renderer.renderTexture(m_pieces.get(), &pieceRect, &boardRect);
         }
     }
@@ -93,24 +81,52 @@ private:
     template<LayerEventType Event>
     void process(const Event&) {}
     void process(const KeyUpEvent& event) {
+        // request game restart when R key is pressed
         if (event.key == KEY_R)
-            ChessClient::get().requestRestart();
+            g_MQ.gui2net.push(RestartReq{});
     }
     void process(const MouseMotionEvent& event) {
+        // update the hovered tile
         const auto& w = r_widget.get();
         m_hoveredTile = w.rectFromPos(w.guiPosToLogical(event.x, event.y));
     }
     void process(const MouseLeftDownEvent& event) {
+        // state-dependant processing
         m_fsm.process(event);
     }
 
+    // Responsibility: request promotion
     void perform(PromotionOperation op) {
-        ChessClient::get().requestPromotion(op.type);
+        g_MQ.gui2net.push(PromotionReq{op.type});
     }
     void perform(EmptyOperation) {}
 
+    // Responsibility: process network messages
+    void onNetworkMessage(const NetworkMessage& msg) {
+        if (auto* restartMsg = std::get_if<RestartMsg>(&msg)) {
+            m_gameCache = {
+                .board = restartMsg->cache.board,
+                .moves = {},
+                .selectedPiece = {},
+                .myColor = restartMsg->myColor,
+                .currTeam = restartMsg->cache.state.currentTeam
+            };
+            m_moveTiles.clear();
+            m_fsm = FSM{IdleBoardState{std::ref(*this)}};
+        } else if (std::holds_alternative<ShutdownMsg>(msg))  {
+            triggerQuitEvent();
+        } else std::visit([&](const auto& m) { m_fsm.process(m); }, msg);
+    }
+    
+    // TODO: GUI knows too much about game logic
+    struct GameCache {
+        BoardType board;
+        Moves moves;
+        Pos selectedPiece;
+        Piece::Color myColor;
+        Piece::Color currTeam;
+    } m_gameCache;
 
-    Moves m_moves;
     std::vector<Rect> m_moveTiles;
     // texture map
     mutable TextureMap m_pieces;

@@ -8,10 +8,11 @@
 
 template<typename HandlerContext>
 class BoardPromotionHandler {
-    // actions of the column/row  
+    // actions of the promotion menu 
     enum class Actions : ActionID 
     { CHOOSE_ROOK = 0X00, CHOOSE_KNIGHT = 0x01, CHOOSE_BISHOP = 0x02, CHOOSE_QUEEN = 0x03 };
 
+    // Responsibility: define a menu layout
     static consteval auto buildPayload() {
         using MenuAction = MenuCreateRequest::Payload::MenuAction;
         return std::array<MenuAction, 4> {
@@ -25,6 +26,7 @@ class BoardPromotionHandler {
 public:
     static constexpr std::string_view getID() { return "Board ops"; }
 
+    // Responsibility: build a menu widget and package it
     static bool requestMainMenu(HandlerContext ctx) {
         constexpr auto payload = buildPayload();
 
@@ -43,6 +45,10 @@ public:
         return true;
     }
 
+    // Responsibility: If a response is directed at it,
+    // * then, set a pending operation for the BoardInteractor 
+    //   and consume the response by returning true
+    // * else, indicate that the response was not consumed by rerturning false
     bool dispatch(MenuResponse&& resp, HandlerContext ctx) {
         if (!ctx.op) return false;
         switch (static_cast<Actions>(resp.code)) {
@@ -68,6 +74,8 @@ public:
 
 template<typename HandlerContext>
 class GameOverHandler {
+    // Responsibility: convert the score to a string of a format: 
+    // [WHITE_SCORE:BLACK_SCORE]
     static std::string_view buildScoreString(Score score) {
         char* begin = s_score;
         char* end = s_score + sizeof(s_score);
@@ -86,6 +94,7 @@ class GameOverHandler {
 public:
     static constexpr std::string_view getID() { return "GameOver"; }
 
+    // Responsibility: build a game over menu and package it into a request
     static bool requestMainMenu(HandlerContext ctx) {
         const auto& w = ctx.widget.get();
         auto hbox = w.getHitBox();
@@ -109,6 +118,7 @@ public:
         };
         return true;
     }
+    // Responsibility: indicate that a response can't be directed at it
     static bool dispatch(PopupResponse&&, HandlerContext) { return false; }
 private:
     // PopupCreateRequest accepts string_views

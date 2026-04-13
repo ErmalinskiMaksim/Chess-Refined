@@ -1,8 +1,9 @@
 #include "Board.h"
-#include "GameState.h"
 #include <utility>
 #include <algorithm>
 
+// Responsibilities:
+// * Default-initialize a chess board
 consteval BoardType initBoard() {
     BoardType board;
     board[0] = { Piece::Type::ROOK,   Piece::Color::WHITE};
@@ -31,18 +32,21 @@ consteval BoardType initBoard() {
     return board;
 }
 
+// Vectors of rook's attack
 constexpr Board::Directions rookDirections = {
       Pos {0, +1}
     , Pos {0, -1}
     , Pos {+1, 0}
     , Pos {-1, 0}
 };
+// Vectors of bishop's attack
 constexpr Board::Directions bishopDirections = {
       Pos {+1, +1}
     , Pos {+1, -1}
     , Pos {-1, -1}
     , Pos {-1, +1}
 };
+// Vectors of king's attack
 constexpr Board::RoundDirections kingDirections = {
       Pos{-1, -1}
     , Pos{-1,  0}
@@ -53,6 +57,7 @@ constexpr Board::RoundDirections kingDirections = {
     , Pos{+1,  0}
     , Pos{+1, +1}
 };
+// Vectors of knight's attack
 constexpr Board::RoundDirections knightDirections = {
       Pos{-2, +1}
     , Pos{-2, -1}
@@ -64,6 +69,9 @@ constexpr Board::RoundDirections knightDirections = {
     , Pos{+2, -1}
 };
 
+// Responsibilities:
+// * Initialize the board 
+// * Set default flags
 Board::Board()
     : m_board{initBoard()}
     , m_blackData{{4, 7}, true, true}
@@ -72,6 +80,9 @@ Board::Board()
     , m_enPassantEnabled{false}
 {}
 
+// Responsibilities:
+// * Perform move commit logic according to chess rules
+// * Calculate and return a score of the captured piece
 uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, Piece::Color teamColor) noexcept {
     // reset en passant flags
     auto flags = GameState::Flags::NONE;
@@ -79,14 +90,16 @@ uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, Piece::Color teamColor) noex
     Pos oldEnPassantTarget = m_enPassantTarget;
     m_enPassantEnabled = false;
 
-    Piece::Type capturedType = m_board[posToIndex(moveTo)].type;
+    auto capturedType = at(moveTo).type;
     auto movedPiece = at(moveFrom);
+
+    // NOTE: at() method is not called because it returns a copy
     m_board[posToIndex(moveTo)] = 
         std::exchange(m_board[posToIndex(moveFrom)], {Piece::Type::NONE, Piece::Color::BLACK}); 
 
-    Piece::Color oppositeTeamColor = (teamColor == Piece::Color::WHITE) 
-        ? Piece::Color::BLACK : Piece::Color::WHITE;
-    auto& team = (teamColor == Piece::Color::WHITE) ? m_whiteData : m_blackData;
+    // determine the colors of a current and opponent teams' colors
+    auto oppositeTeamColor = teamColor == Piece::Color::WHITE ? Piece::Color::BLACK : Piece::Color::WHITE;
+    auto& team = teamColor == Piece::Color::WHITE ? m_whiteData : m_blackData;
 
     // update castling
     if (team.QSideCastling) { // left rook
@@ -97,7 +110,7 @@ uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, Piece::Color teamColor) noex
         auto rook = at(Pos(7, (movedPiece.col == Piece::Color::WHITE) ? 0 : 7));
         team.KSideCastling = (rook.type == Piece::Type::ROOK && rook.col == movedPiece.col);
     }
-    if (movedPiece.type == Piece::Type::KING) {
+    if (movedPiece.type == Piece::Type::KING) { // king movement while castling
         if (std::abs(team.kingPos.x - moveTo.x) == 2) {
             Pos oldRookPos; 
             Pos newRookPos;
@@ -128,6 +141,7 @@ uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, Piece::Color teamColor) noex
             flags = GameState::Flags::PROMOTION;
     }
 
+    // check if a team has any moves to set a check mate or stale mate flags
     if (!hasAnyMoves(oppositeTeamColor)) {
         auto& oppositeTeam = (oppositeTeamColor == Piece::Color::WHITE)
             ? m_whiteData : m_blackData;
@@ -148,19 +162,24 @@ uint8_t Board::commitMove(Pos moveFrom, Pos moveTo, Piece::Color teamColor) noex
     return score + static_cast<uint8_t>(flags);
 }
 
+// Responsibilities:
+// * perform promotion
 void Board::promote(Pos pos, Piece::Type type) noexcept {
     m_board[posToIndex(pos)].type = type; 
 }
 
+// Responsibilities:
+// * Check if a team of a specified color has any moves left
 bool Board::hasAnyMoves(Piece::Color teamColor) noexcept {
     for (auto i = 0uz; i < m_board.size(); ++i) {
-        if (m_board[i].col != teamColor || m_board[i].type == Piece::Type::NONE)
-            continue;
+        if (m_board[i].col != teamColor || isEmpty(m_board[i])) continue;
         if (!(calculatePieceMoves(indexToPos(i), teamColor).empty())) return true;
     }
     return false;
 }
 
+// Responsibilities:
+// * Calculate and return legal moves for a piece at a given position with a given color
 Moves Board::calculatePieceMoves(Pos moveFrom, Piece::Color teamColor) noexcept {
     Moves moves{};
     auto movingPiece = at(moveFrom);
@@ -222,6 +241,8 @@ Moves Board::calculatePieceMoves(Pos moveFrom, Piece::Color teamColor) noexcept 
     return filteredMoves;
 }
 
+// Responsibilities:
+// * Calculate pawn moves
 Moves Board::calculatePawnMoves(Pos pos, Piece::Color pawnColor) const noexcept {
     Moves moves;
     moves.reserve(4);
@@ -258,6 +279,8 @@ Moves Board::calculatePawnMoves(Pos pos, Piece::Color pawnColor) const noexcept 
     return moves;
 }
 
+// Responsibilities:
+// * Calculate rook/bishop/queen moves
 Moves Board::calculateSlidingMoves(const Directions& dirs, Pos pos, Piece::Color myColor) const noexcept {
     Moves moves;
     moves.reserve(14);
@@ -275,6 +298,8 @@ Moves Board::calculateSlidingMoves(const Directions& dirs, Pos pos, Piece::Color
     return moves;
 }
 
+// Responsibilities:
+// * Calculate king/knight moves
 Moves Board::calculateRoundMoves(const RoundDirections& dirs, Pos pos, Piece::Color myColor) const noexcept {
     Moves moves;
     moves.reserve(8);
@@ -291,6 +316,8 @@ Moves Board::calculateRoundMoves(const RoundDirections& dirs, Pos pos, Piece::Co
     return moves;
 }
 
+// Responsibilities:
+// * check if a king at a given pos, of given color can castle to a given side
 bool Board::canCastle(Pos kingPos, Piece::Color kingCol, bool isQSide) const noexcept {
     Pos closeTile = {1, 0};
     if (isQSide) {
@@ -307,6 +334,8 @@ bool Board::canCastle(Pos kingPos, Piece::Color kingCol, bool isQSide) const noe
     return false;
 }
 
+// Responsibilities:
+// * Check if king is attacked by any piece if a move is committed
 bool Board::isKingEndangered(Pos kingPos, Piece::Color kingCol, Pos moveFrom, Pos moveTo) noexcept {
     const auto movedPiece = std::exchange(m_board[posToIndex(moveFrom)], {Piece::Type::NONE, Piece::Color::BLACK});
     const auto replacedPiece = std::exchange(m_board[posToIndex(moveTo)], movedPiece);
@@ -320,6 +349,8 @@ bool Board::isKingEndangered(Pos kingPos, Piece::Color kingCol, Pos moveFrom, Po
     return isAttacked;
 }
 
+// Responsibilities:
+// * Check if king is attacked by any piece
 bool Board::isKingAttacked(Pos kingPos, Piece::Color kingCol) const noexcept {
     return   isKingAttackedByPawn   (kingPos, kingCol)
           || isKingAttackedBySliding(rookDirections,   kingPos, {Piece::Type::ROOK,   kingCol})
@@ -328,6 +359,8 @@ bool Board::isKingAttacked(Pos kingPos, Piece::Color kingCol) const noexcept {
           || isKingAttackedByRound  (kingDirections,   kingPos, {Piece::Type::KING,   kingCol});
 }
 
+// Responsibilities:
+// * Check if king is attacked by pawns
 bool Board::isKingAttackedByPawn(Pos kingPos, Piece::Color kingCol) const noexcept {
     auto leftAhead = posAhead(Pos(kingPos.x-1, kingPos.y), kingCol);
     auto rightAhead = posAhead(Pos(kingPos.x+1, kingPos.y), kingCol);
@@ -345,6 +378,8 @@ bool Board::isKingAttackedByPawn(Pos kingPos, Piece::Color kingCol) const noexce
     return false;
 }
 
+// Responsibilities:
+// * Check if king is attacked by rooks/bishops/queens
 // target = {enemy type; friend color}
 bool Board::isKingAttackedBySliding(const Directions& dirs, Pos kingPos, Piece target) const noexcept {
     for (auto&& dir : dirs) {
@@ -361,6 +396,8 @@ bool Board::isKingAttackedBySliding(const Directions& dirs, Pos kingPos, Piece t
     return false;
 }
 
+// Responsibilities:
+// * Check if king is attcked by king/knights
 // target = {enemy type; friend color}
 bool Board::isKingAttackedByRound(const RoundDirections& dirs, Pos kingPos, Piece target) const noexcept {
     for (auto&& dir : dirs) {

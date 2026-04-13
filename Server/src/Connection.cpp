@@ -2,17 +2,23 @@
 #include "ChessServer.h"
 #include "Serializer.h"
 
+// Responsibilities:
+// * Acquire a shared ownership of a socket
 Connection::Connection(Socket sock, ServerView svr) 
     : m_socket(std::move(sock))
     , m_strand{m_socket.get_executor()}
     , r_server(svr)
 {}
 
+// Responsibilities:
+// * Start reading
 void Connection::start() {
     m_socket.set_option(boost::asio::ip::tcp::no_delay(true)); 
     readHeader();
 }
 
+// Responsibilities:
+// * Start writing when the sending queue is available
 void Connection::send(StreamType stream) {
     boost::asio::post(
         m_strand
@@ -25,13 +31,16 @@ void Connection::send(StreamType stream) {
         });
 }
 
+// Responsibilities:
+// * Read the header 
+// * If the header is valid, start reading the payload
 void Connection::readHeader() {
     boost::asio::async_read(
         m_socket,
         boost::asio::buffer(&m_headerBuffer, sizeof(m_headerBuffer)),
         boost::asio::bind_executor(
             m_strand
-            , [self = shared_from_this()](boost::system::error_code ec, size_t) {
+            , [self = shared_from_this()](auto ec, size_t) {
                 if (!ec) {
                     uint8_t length = self->m_headerBuffer;
                     self->readPayload(length);
@@ -39,6 +48,9 @@ void Connection::readHeader() {
     }));
 }
 
+// Responsibilities:
+// * Read the payload 
+// * Pass a deserialized packet to the server
 void Connection::readPayload(uint8_t payloadLen) {
     if (!payloadLen || payloadLen > sizeof(m_payloadBuffer)) {
         close();
@@ -50,7 +62,7 @@ void Connection::readPayload(uint8_t payloadLen) {
         boost::asio::buffer(m_payloadBuffer, payloadLen),
         boost::asio::bind_executor(
             m_strand 
-            , [self = shared_from_this(), payloadLen](boost::system::error_code ec, size_t) {
+            , [self = shared_from_this(), payloadLen](auto ec, size_t) {
                if (!ec) {
                 self->r_server.get().onPacket(self, Serializer::deserialize(
                             {self->m_payloadBuffer, payloadLen}));
@@ -59,12 +71,13 @@ void Connection::readPayload(uint8_t payloadLen) {
     }));
 }
 
+// Responsibilities:
+// * Write to the socket
 void Connection::write() {
     boost::asio::async_write(
         m_socket
         , boost::asio::buffer(m_sendQueue.front()),
-        [self = shared_from_this()](boost::system::error_code ec, size_t)
-        {
+        [self = shared_from_this()](auto ec, size_t) {
             if (!ec) {
                 self->m_sendQueue.pop_front();
                 if (!self->m_sendQueue.empty()) 
@@ -75,6 +88,9 @@ void Connection::write() {
         });
 }
 
+// Responsibilities:
+// * Inform the client about the shutdown 
+// * Close the socket
 void Connection::close() {
     if (m_disconnected) return;
 

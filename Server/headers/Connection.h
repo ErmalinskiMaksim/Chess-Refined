@@ -1,10 +1,10 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
+#include "IConnection.h"
 #include "boost/asio.hpp"
 #include <deque>
 #include <memory>
-#include "IConnection.h"
 
 class ChessServer;
 class Connection;
@@ -18,7 +18,10 @@ using Strand    = boost::asio::strand<Socket::executor_type>;
 using ConnectionPtr = std::shared_ptr<Connection>;
 using ServerView    = std::reference_wrapper<ChessServer>;
 
-class Connection : public IConnection 
+// Implementation of IConnection interface. 
+// * Represents a boost::asio TCP connection (doesn't create it but destroys it)
+// * Performs asynchronous read() and write() operations to the client
+class Connection final : public IConnection 
                  , public std::enable_shared_from_this<Connection> {
 public:
     explicit Connection(Socket, ServerView);

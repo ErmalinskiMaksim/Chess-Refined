@@ -5,14 +5,13 @@
 int main(int argc, char* argv[]) {
     constexpr std::string_view fallbackIP = "127.0.0.1";
 
-    ChessClient::get().init();
-    ChessClient::get().connect((argc > 1) ? argv[1] : fallbackIP);
+    ChessClient client;
+    client.init();
+    client.connect((argc > 1) ? argv[1] : fallbackIP);
 
     try {
         RTWgui::run();
     } catch (const std::runtime_error &e) {
         std::println("RTWgui error: {}", e.what());
     }
-
-    ChessClient::get().requestShutDown();
 }

@@ -6,6 +6,8 @@ TextureMap::TextureMap(Texture texture)
     , m_pieceHeight{static_cast<float>(m_texture.get()->h) / 2}
 {}
 
+// Responsibility:
+// * Return a boundary of a piece in the texture map (coordinates are texture-dependent)
 Rect TextureMap::getTile(Piece piece) const noexcept {
     float y = (piece.col == Piece::Color::WHITE) ? m_pieceHeight : 0.0f;
     switch(piece.type) {

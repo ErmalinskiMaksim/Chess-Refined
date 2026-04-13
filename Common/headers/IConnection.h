@@ -8,6 +8,8 @@
 using StreamType = std::vector<uint8_t>;
 using StreamTypeView = std::span<uint8_t>;
 
+// The main interface of the network connection between client and
+// server applications
 class IConnection {
 public:
     virtual void close() = 0;

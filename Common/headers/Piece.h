@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+// An game piece representation
 struct Piece {
     enum class Type : uint8_t {
         NONE, PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING

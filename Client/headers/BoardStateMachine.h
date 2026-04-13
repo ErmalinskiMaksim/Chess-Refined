@@ -2,7 +2,19 @@
 #define BOARD_STATE_MACHINE_H
 
 #include "RTWgui/Events.h"
-#include "ChessClient.h"
+#include "RTWgui/Handlers.h"
+#include "BoardWidget.h"
+#include "BoardHandlers.h"
+#include "MessageQueues.h"
+
+template<WidgetType, HandlerContextType, typename...>
+class BoardInteractor;
+using DefaultBoardInteractor = BoardInteractor<BoardWidget
+                             , HandlerContext
+                             , BoardPromotionHandler<HandlerContext>
+                             , GameOverHandler<HandlerContext>
+>;
+using DefaultBoardInteractorView = std::reference_wrapper<DefaultBoardInteractor>;
 
 class IdleBoardState;
 class MoveWaitingState;
@@ -27,7 +39,7 @@ public:
     explicit BaseBoardState(DefaultBoardInteractorView context) 
         : m_context(context) {}
     template<NetworkMessageType Msg>
-    OptState process(Msg);
+    OptState process(const Msg&);
 protected:
     // Board interactor reference
     DefaultBoardInteractorView m_context;
@@ -43,7 +55,8 @@ public:
     // supported events
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
-    OptState process(GameState::Flags);
+    // supported messages
+    OptState process(const StateUpdateMsg&);
 };
 
 class MoveWaitingState : public BaseBoardState {
@@ -53,7 +66,8 @@ public:
     // supported events
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
-    OptState process(Moves);
+    // supported messages
+    OptState process(const Moves&);
 };
 
 class MoveSelectionBoardState : public BaseBoardState {
@@ -63,6 +77,7 @@ public:
     // supported events
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
+    // supported messages
 };
 
 class MoveCommitWaitingState : public BaseBoardState {
@@ -72,7 +87,8 @@ public:
     // supported events
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
-    OptState process(GameState::Flags);
+    // supported messages
+    OptState process(const StateUpdateMsg&);
 };
 
 class PromotionCommitWaitingState : public BaseBoardState {
@@ -82,7 +98,8 @@ public:
     // supported events
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
-    OptState process(PromotionMsg);
+    // supported messages
+    OptState process(const StateUpdateMsg&);
 };
 
 class GameOverBoardState : public BaseBoardState {
@@ -91,10 +108,11 @@ public:
         : BaseBoardState(context) {}
     OptState process(const MouseLeftDownEvent&);
     using BaseBoardState::process;
+    // supported messages
 };
 
 template<NetworkMessageType Msg>
-OptState BaseBoardState::process(Msg) { return std::nullopt; }
+OptState BaseBoardState::process(const Msg&) { return std::nullopt; }
 
 // state machine 
 template<BoardStateType... States>
@@ -108,9 +126,10 @@ public:
         auto optResult = std::visit([&](auto& state) { return state.process(event); }, m_state);
         if (optResult) m_state = std::move(*optResult);
     }
+    // dispatches network messages
     template<NetworkMessageType Msg>
-    void process(Msg msg) {
-        auto optResult = std::visit([&](auto& state) { return state.process(std::move(msg)); }, m_state);
+    void process(const Msg& msg) {
+        auto optResult = std::visit([&](auto& state) { return state.process(msg); }, m_state);
         if (optResult) m_state = std::move(*optResult);
     }
 private:

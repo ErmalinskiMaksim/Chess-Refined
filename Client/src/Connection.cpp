@@ -3,11 +3,16 @@
 #include "Serializer.h"
 #include <print>
 
+// Initialize the socket without binding it
 Connection::Connection(Context& io, ClientView client)
     : m_socket{io}
     , r_client{client}
 {}
 
+// Responsibilities:
+// * Bind the socket to the server endpoint
+// * Try to asynchoronously connect to the server 
+// * Upon a successful connection, start reading server responses
 void Connection::start(std::string_view ipAddr) {
     Resolver resolver(m_socket.get_executor()); 
     auto endpoints = resolver.resolve(ipAddr, "5000"); 
@@ -20,6 +25,8 @@ void Connection::start(std::string_view ipAddr) {
         });
 }
 
+// Responsibilities:
+// * Start writing to the socket as soon as the writing queue is available
 void Connection::send(StreamType data) {
     boost::asio::post(m_socket.get_executor(),
         [self = shared_from_this(), data = std::move(data)]() mutable {
@@ -31,10 +38,22 @@ void Connection::send(StreamType data) {
         });
 }
 
+// Responsibilities:
+// * Notify the server about shutdown 
+// * Close the socket
+// * Clear bufferes
 void Connection::close() {
+    boost::system::error_code ec;
 
+    m_socket.shutdown(boost::asio::socket_base::shutdown_both, ec);
+    m_socket.close(ec);
+
+    m_sendQueue.clear();
 }
 
+// Responsibilities:
+// * Asynchoronously read the header of an incoming packet
+// * If the header is valid, start reading the payload
 void Connection::readHeader() {
     boost::asio::async_read(
         m_socket,
@@ -45,6 +64,9 @@ void Connection::readHeader() {
         });
 }
 
+// Responsibilities:
+// * Asynchoronously read the body of an incoming packet
+// * Pass a deserialized packet to the client
 void Connection::readPayload(uint8_t len) {
     if (len > sizeof(m_payloadBuffer)) return;
 
@@ -61,6 +83,8 @@ void Connection::readPayload(uint8_t len) {
         });
 }
 
+// Responsibilities:
+// * asynchoronously write to the socket
 void Connection::write() {
     boost::asio::async_write(
         m_socket,

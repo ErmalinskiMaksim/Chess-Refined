@@ -3,10 +3,12 @@
 
 #include "Piece.h"
 
+// Game score
 struct Score {
     uint8_t white; uint8_t black;
 };
 
+// Game metadata 
 struct GameState {
     enum class Flags : uint8_t {
         NONE = 0x10, STALE_MATE = 0x20, CHECK_MATE = 0x30, PROMOTION = 0x40 

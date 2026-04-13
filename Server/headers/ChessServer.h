@@ -1,45 +1,46 @@
 #ifndef CHESS_SERVER_H
 #define CHESS_SERVER_H
 
-#include <unordered_set>
 #include "Board.h"
 #include "Connection.h"
-#include "GameState.h"
+
+#include <unordered_set>
 
 struct Packet;
+
+// Main server-side game logic and connection manager
 class ChessServer {
     using ConnectionList = std::unordered_set<ConnectionPtr>;
 public:
     ChessServer();
-    ServerView getView() noexcept;
     void doAccept();
     void run();
-    void onConnect(const ConnectionPtr&);
-    void onDisconnect(const ConnectionPtr&);
-    void onPacket(const ConnectionPtr&, Packet);
+
+    // callbacks
+    void onConnect      (const ConnectionPtr&);
+    void onDisconnect   (const ConnectionPtr&);
+    void onPacket       (const ConnectionPtr&, Packet);
 private:
+    ServerView getView() noexcept;
     // sessions
-    void removeFromSession(const ConnectionPtr&);
-    void createSession(const ConnectionPtr&, const ConnectionPtr&);
+    void removeSession  (const ConnectionPtr&);
+    void createSession      (const ConnectionPtr&, const ConnectionPtr&);
 
     // connections
-    void addConnection(const ConnectionPtr&);
-    void removeConnection(const ConnectionPtr&);
+    void addConnection      (const ConnectionPtr&);
+    void removeConnection   (const ConnectionPtr&);
 
     //  client requests 
-    void performShutdown(const ConnectionPtr&);
-    void performRestart(const ConnectionPtr&);
-    void performAvailableMoves(const ConnectionPtr&, Pos);
-    void performPromotion(const ConnectionPtr&, Piece::Type, Pos);
-    void performCommitMove(const ConnectionPtr&, Pos, Pos);
-    void performGetCache(const ConnectionPtr&);
+    struct GameSession;
+    void performShutdown        ();
+    void performRestart         (GameSession&);
+    void performAvailableMoves  (GameSession&, const ConnectionPtr&, Pos);
+    void performPromotion       (GameSession&, Piece::Type, Pos);
+    void performCommitMove      (GameSession&, Pos, Pos);
     
     // server actions
-    void notifyColor(const ConnectionPtr&, Piece::Color) const;
-    void notifyDisconnect(const ConnectionPtr&) const;
-
-    // helpers
-    std::optional<size_t> findSession(const ConnectionPtr&) const noexcept;
+    void notifyColor        (const ConnectionPtr&, Piece::Color) const;
+    void notifyDisconnect   (const ConnectionPtr&) const;
 
     struct GameSession {
         struct State {
@@ -51,10 +52,15 @@ private:
         ConnectionPtr black;
     };
 
+    // all active sessiosn
     std::vector<GameSession> m_sessions;
+    // network context
     Context m_io;
+    // acceptor socket
     Acceptor m_acceptor;
+    // all active connections
     ConnectionList m_connections;
+    // an active connection with a player who hasn't joined a session
     ConnectionPtr m_waitingPlayer;
 };
 
